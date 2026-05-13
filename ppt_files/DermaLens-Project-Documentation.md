@@ -1,965 +1,1 @@
-# DermaLens: Project Documentation
-## A Fairness-Aware, Explainable Smartphone Application for Early Skin Cancer Risk Assessment
-
-**Final Year B.Tech Computer Science Project**  
-**Academic Year: 2026-2027**
-
----
-
-## 1. Project Title
-
-**DermaLens: A Fairness-Aware, Explainable Smartphone Application for Early Skin Cancer Risk Assessment**
-
----
-
-## 2. Abstract
-
-Skin cancer, particularly melanoma, has high mortality when detected late, and access to timely dermatological screening is limited in many regions. This project proposes DermaLens, a smartphone-based application that performs on-device, AI-driven risk assessment of skin lesions using only the phone camera. A lightweight MobileNetV3-based convolutional neural network is optimized and quantized for real-time inference on consumer devices, enabling fully offline, privacy-preserving analysis. The model is trained on publicly available dermoscopic and smartphone-captured datasets, with a fairness-aware training strategy that explicitly reduces performance gaps across different skin tones. The app guides users to capture high-quality images, generates risk categories (low/medium/high), and provides GradCAM-based visual explanations to increase transparency and user trust. Longitudinal tracking allows users to monitor lesion evolution over time, while exportable reports support clinician consultation and triage. By combining computer vision, mobile deployment, explainability, and fairness, DermaLens aims to deliver a practical, low-cost decision-support tool that can improve early detection, reduce inequalities in access to screening, and provide a strong foundation for future clinical validation and research.
-
-**Keywords:** Skin Cancer Detection, Mobile Health, Fairness in AI, Computer Vision, Explainable AI, Deep Learning, Edge Computing
-
----
-
-## 3. Problem Statement
-
-Early detection of melanoma remains critical for improving survival rates, yet access to dermatological screening is severely limited by:
-- Geographic barriers and uneven distribution of specialists
-- Long wait times for dermatology appointments (average 3-6 months in many regions)
-- High costs of specialist consultations
-- Limited healthcare infrastructure in low and middle-income countries (LMICs)
-
-Current commercial smartphone apps for skin cancer screening suffer from significant limitations:
-1. **High false positive rates (over-detection)**: Leading to unnecessary specialist visits and healthcare system burden
-2. **Poor performance across diverse skin tones**: Accuracy drops of 15-20% on darker skin (Fitzpatrick IV-VI) due to training data bias
-3. **Lack of explainability**: Black-box predictions erode user and clinician trust
-4. **Limited real-world validation**: Most studies use dermoscopic images, not smartphone photos
-5. **Privacy concerns**: Many apps require cloud connectivity and data upload
-
-These issues result in overburdened healthcare systems, reduced user adoption despite high download rates (900k+ for leading apps), and perpetuation of health inequities.
-
----
-
-## 4. Research Gap
-
-Existing smartphone skin cancer detection systems demonstrate proof-of-concept but fall short in critical areas:
-
-| **Gap Area** | **Current State** | **DermaLens Innovation** |
-|--------------|-------------------|--------------------------|
-| **Fairness** | 15-20% accuracy drop on darker skin tones | <5% gap through fairness-aware training |
-| **False Positives** | 49% of benign lesions flagged as high-risk | 25% reduction via confidence calibration |
-| **Explainability** | No visual reasoning provided | Real-time GradCAM++ heatmaps |
-| **Validation** | Dermoscopic images, limited user studies | Smartphone photos + 100-user validation |
-| **Privacy** | Cloud-dependent, data upload required | Fully offline, on-device inference |
-| **Tracking** | Single-point assessment only | Longitudinal monitoring with change alerts |
-
-**Key Research Question:** Can a fairness-optimized, explainable CNN deployed on consumer smartphones achieve >92% accuracy with <5% performance gap across skin tones while maintaining user trust and clinical utility?
-
----
-
-## 5. UN Sustainable Development Goals (SDGs)
-
-DermaLens directly contributes to three UN Sustainable Development Goals:
-
-### SDG 3 – Good Health and Well-Being
-**Target 3.4:** By 2030, reduce by one third premature mortality from non-communicable diseases through prevention and treatment.
-
-**How DermaLens Contributes:**
-- Enables early detection of melanoma, which has >99% 5-year survival rate when caught early vs <27% when detected late
-- Provides accessible preventive screening tool reducing barriers to timely diagnosis
-- Supports self-monitoring and proactive health management
-- Reduces late-stage diagnoses through continuous monitoring and change alerts
-
-### SDG 10 – Reduced Inequalities
-**Target 10.2:** Empower and promote social, economic and political inclusion of all, irrespective of age, sex, race, ethnicity or other status.
-
-**How DermaLens Contributes:**
-- **Algorithmic fairness:** Explicitly reduces AI bias across skin tones, addressing historical underrepresentation of darker skin in training data
-- **Geographic equity:** Smartphone deployment reaches rural and underserved areas lacking dermatology specialists
-- **Economic accessibility:** Low-cost solution (free app + existing smartphone) vs expensive specialist consultations
-- **Language and literacy:** Visual interface with minimal text, accessible across literacy levels
-
-### SDG 9 – Industry, Innovation and Infrastructure
-**Target 9.5:** Enhance scientific research, upgrade technological capabilities of industrial sectors.
-
-**How DermaLens Contributes:**
-- Demonstrates cutting-edge edge AI and mobile health infrastructure
-- Advances research in fairness-aware deep learning and explainable AI
-- Provides open-source framework for reproducible medical mobile AI
-- Showcases hardware-software co-design for resource-constrained deployment
-- Builds scalable, sustainable digital health infrastructure
-
----
-
-## 6. Proposed Solution: DermaLens
-
-### 6.1 Overview
-
-DermaLens is a cross-platform (Android/iOS) Flutter-based smartphone application delivering offline, privacy-preserving skin lesion risk assessment through a fairness-optimized, lightweight CNN deployed via TensorFlow Lite.
-
-### 6.2 Key Innovations
-
-1. **Skin Tone Normalization Module:** Fitzpatrick-aware preprocessing with adaptive color correction
-2. **Fairness-Aware MobileNetV3:** Reweighted loss function balancing performance across skin types
-3. **Real-Time GradCAM++ Visualization:** Heatmaps explaining model decisions directly in-app
-4. **Confidence-Calibrated Alerts:** Dynamic thresholding reducing false positives by 25%
-5. **Longitudinal Monitoring:** Track lesion evolution over time with automated change detection
-6. **Guided Image Capture:** AR overlays and quality checks ensuring optimal input images
-
-### 6.3 Core Capabilities
-
-#### A. On-Device Risk Assessment
-- Capture skin lesion photo using phone camera
-- Run optimized FairDermNet model fully offline (no internet required)
-- Output risk category: **Low / Medium / High risk**
-- Probability score with confidence interval
-- Interpretation: "Pattern suggests irregular border and color variation"
-
-#### B. Guided, High-Quality Image Capture
-- **AR overlay with circular framing guide** showing lesion placement
-- **Distance & focus helper:** Real-time prompts ("Move closer/farther")
-- **Blur detection:** Automatic rejection of out-of-focus images
-- **Lighting assistant:** Shadow/overexposure detection with retake prompts
-- **Multi-shot capture:** 2-3 angles, auto-select best or ensemble predictions
-
-#### C. Fairness-Aware Processing
-- **Skin tone estimation** from surrounding skin region (Fitzpatrick-like scale)
-- **Tone-adaptive preprocessing:** Color normalization, contrast enhancement calibrated per tone
-- **Fairness-trained model:** Minimizes performance gaps between skin types
-- **Transparent calibration:** UI note: "Model calibrated for wide range of skin tones"
-
-#### D. Explainable Results
-- **Heatmap overlay (GradCAM++):** Visual highlighting of model focus areas
-- **Toggle view:** Swipe between original and heatmap overlay
-- **Feature interpretation:** Asymmetry, border irregularity, color variegation scores
-- **Doctor mode:** Detailed technical view with classical image features + model confidence
-
-#### E. Longitudinal Tracking & Early Warning
-- **Save lesions** with nicknames ("mole on left arm")
-- **Timeline view:** Compare with previous scans (size, color, shape changes)
-- **Change alerts:** "Size +18% over 3 months – consult dermatologist"
-- **Automated monitoring:** Scheduled reminder notifications for re-checks
-
-#### F. Triage & Clinical Integration
-- **Risk-appropriate messaging:**
-  - Low: Calm reassurance + re-check schedule
-  - Medium: Monitor + optional consultation
-  - High: Clear recommendation for professional evaluation
-- **Exportable reports:** PDF with images, heatmaps, risk scores, timeline
-- **Share functionality:** Email/WhatsApp to clinicians
-- **Clinic code mode:** Dermatologists can use in-clinic for documentation
-
-#### G. Educational Content
-- ABCDE of melanoma (Asymmetry, Border, Color, Diameter, Evolving)
-- Visual cards explaining heatmap interpretations
-- Skin cancer awareness and prevention tips
-
----
-
-## 7. Technical Architecture
-
-### 7.1 System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      DermaLens Mobile App                   │
-│                        (Flutter)                            │
-├─────────────────────────────────────────────────────────────┤
-│  UI Layer                                                   │
-│  - Camera interface with AR guides                          │
-│  - Results visualization (risk + heatmap)                   │
-│  - Timeline & history tracking                              │
-│  - Report generation & sharing                              │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│  Preprocessing Pipeline (Dart/OpenCV)                       │
-│  - Hair removal (Black Top-Hat transform)                   │
-│  - Lesion detection & cropping                              │
-│  - Skin tone estimation (Fitzpatrick classifier)            │
-│  - Adaptive color normalization (CLAHE)                     │
-│  - Lighting correction                                      │
-│  - Resize & normalization (224x224, [0,1])                  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│  FairDermNet Model (TensorFlow Lite)                        │
-│  - MobileNetV3-Large backbone (quantized INT8)              │
-│  - Fairness attention module                                │
-│  - Global context aggregator (GeM pooling)                  │
-│  - Dual classification head (risk + skin tone)              │
-│  - Size: 5.8MB | Latency: 22ms (Snapdragon 720G)           │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│  Post-Processing & Explainability                           │
-│  - Risk score calibration                                   │
-│  - GradCAM++ heatmap generation                             │
-│  - Confidence interval estimation                           │
-│  - Feature extraction (ABCDE metrics)                       │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│  Local Storage (SQLite, encrypted)                          │
-│  - Scan history                                             │
-│  - Lesion tracking data                                     │
-│  - User preferences                                         │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 7.2 FairDermNet Model Architecture
-
-```
-Input: 224×224×3 RGB image
-    ↓
-┌──────────────────────────────────┐
-│  MobileNetV3-Large Backbone      │
-│  - 17 inverted residual blocks   │
-│  - h-swish activation            │
-│  - SE (Squeeze-Excite) attention │
-│  - Output: 960D @ 7×7 feature map│
-└──────────────────────────────────┘
-    ↓
-┌──────────────────────────────────┐
-│  Fairness Attention Module       │
-│  - Parallel Fitzpatrick head     │
-│  - Cross-attention fusion        │
-│  - Skin-tone adaptive weighting  │
-└──────────────────────────────────┘
-    ↓
-┌──────────────────────────────────┐
-│  Global Context Aggregator       │
-│  - GeM pooling (generalized mean)│
-│  - Dropout (0.3)                 │
-│  - Dense projection (960→128D)   │
-└──────────────────────────────────┘
-    ↓
-┌──────────────────────────────────┐
-│  Classification Head             │
-│  - Dense layer (128→64)          │
-│  - ReLU + Dropout (0.2)          │
-│  - Output layer (64→2)           │
-│  - Softmax → Risk probability    │
-│                                  │
-│  Auxiliary: Fitzpatrick (64→6)   │
-└──────────────────────────────────┘
-    ↓
-Output: Risk score [0-1] + Skin tone [I-VI]
-```
-
-**Model Specifications:**
-- **Parameters:** 5.4M (after pruning)
-- **Size:** 5.8MB (INT8 quantized)
-- **FLOPS:** 219M
-- **Inference Time:** 22ms (mid-range Android), 45ms (older devices)
-- **Memory:** <100MB peak
-
----
-
-## 8. Fairness Methodology
-
-DermaLens achieves fairness through a multi-stage approach addressing both data and algorithmic bias:
-
-### 8.1 Skin-Tone-Robust Image Preprocessing
-
-**Goal:** Standardize lesion features while preserving diagnostic information across all skin tones.
-
-**Techniques:**
-1. **Hair Removal:** Black Top-Hat morphological transform removes hair artifacts that vary by ethnicity
-2. **Lesion-Focused Cropping:** Auto-detect and crop lesion region, minimizing background skin exposure
-3. **Adaptive Color Normalization:**
-   - CLAHE (Contrast Limited Adaptive Histogram Equalization) applied per-channel
-   - Standardizes lesion-skin contrast regardless of absolute skin darkness
-4. **Relative Color Features:** Focus on lesion vs surrounding skin color differences, not absolute RGB values
-5. **Tone-Balanced Augmentation:**
-   - Color jitter simulating Fitzpatrick I-VI range
-   - Brightness/contrast augmentation
-   - Style transfer-inspired skin tone diversification
-
-### 8.2 Skin Tone Detection as Control Signal
-
-**Fitzpatrick Classifier (Auxiliary Head):**
-- Predicts approximate skin tone category (I-VI) from background skin
-- Used during training for fairness monitoring
-- NOT used to change inference thresholds (maintains single global decision rule)
-
-**Purpose:**
-- Monitor per-group accuracy during training
-- Drive fairness loss computation
-- Enable stratified evaluation
-
-### 8.3 Fairness-Aware Training Objective
-
-**Multi-Task Loss Function:**
-```
-L_total = α × L_risk + β × L_fitzpatrick + γ × L_fairness
-
-Where:
-- L_risk = Cross-Entropy(predicted_risk, true_label)
-- L_fitzpatrick = Cross-Entropy(predicted_tone, estimated_tone)
-- L_fairness = max(Acc_i) - min(Acc_i) for i ∈ [Fitz I-VI]
-
-Hyperparameters: α=1.0, β=0.15, γ=0.25
-```
-
-**Fairness Loss Explanation:**
-- Computes sensitivity/specificity per skin tone group in each mini-batch
-- Penalizes large performance gaps between groups
-- Forces model to find features that work universally
-
-**Training Strategy:**
-- Distribution-aware reweighting: Over-sample underrepresented skin tones
-- Prune learning: Remove neurons that activate primarily for specific tones
-- Adversarial training: Prevent model from inferring skin tone from internal features
-
-### 8.4 Color-Invariant Feature Learning
-
-**Architectural Design Choices:**
-1. **Multi-Scale Feature Fusion:** Capture both fine texture and global structure
-2. **Edge-Aware Augmentation:** EdgeMixup-style perturbations emphasize borders over color
-3. **Attention Mechanisms:**
-   - Channel attention (SE blocks): Focus on discriminative feature channels
-   - Spatial attention: Highlight lesion regions vs background
-   - Skin-tone attention: Adaptive feature weighting based on estimated tone
-
-**Result:** Similar internal representations for structurally similar lesions regardless of skin darkness.
-
-### 8.5 Fairness Evaluation Metrics
-
-**Test Set Stratification:**
-- Continuous skin tone score (ITA° - Individual Typology Angle)
-- Grouped by Fitzpatrick type (I-II, III-IV, V-VI)
-
-**Reported Metrics Per Group:**
-- Sensitivity (True Positive Rate)
-- Specificity (True Negative Rate)
-- F1 Score
-- AUC-ROC
-- False Positive Rate
-
-**Fairness Metrics:**
-- **Equalized Odds Gap:** max|Sens_i - Sens_j| across groups
-- **Performance Parity:** Standard deviation of accuracy across groups
-- **Demographic Parity:** Difference in positive prediction rates
-
-**DermaLens Target:** <5% gap in sensitivity/specificity across all skin tone groups
-
----
-
-## 9. Datasets & Training
-
-### 9.1 Training Datasets
-
-| **Dataset** | **Images** | **Type** | **Classes** | **Purpose** |
-|-------------|-----------|----------|-------------|-------------|
-| **HAM10000** | 10,015 | Dermoscopic | 7 lesion types | Primary training |
-| **ISIC 2019** | 25,331 | Dermoscopic | Binary (melanoma) | Binary classification |
-| **PAD-UFES-20** | 2,298 | Smartphone | 6 types | Domain adaptation |
-| **Custom Augmented** | ~8,000 | Synthetic | Balanced tones | Fairness enhancement |
-
-**Total Effective Training Data:** ~45k images after augmentation
-
-### 9.2 Data Preprocessing Pipeline
-
-```
-Raw Image (variable size, format)
-    ↓
-[1] Quality Check (blur detection, reject if score < threshold)
-    ↓
-[2] Hair Removal (Black Top-Hat transform, morphological closing)
-    ↓
-[3] Lesion Segmentation (GrabCut + morphological ops)
-    ↓
-[4] Skin Tone Estimation (ITA° from surrounding pixels)
-    ↓
-[5] Adaptive Normalization (CLAHE per-channel, tone-specific params)
-    ↓
-[6] Resize & Padding (224×224, maintain aspect ratio)
-    ↓
-[7] Normalization ([0,1] range, ImageNet mean/std)
-    ↓
-Ready for Training/Inference
-```
-
-### 9.3 Data Augmentation
-
-**Spatial Augmentations:**
-- Random rotation (±180°)
-- Horizontal/vertical flips
-- Random zoom (0.8-1.2×)
-- Elastic deformations
-
-**Color Augmentations (Tone-Balanced):**
-- Brightness adjustment (±20%)
-- Contrast adjustment (±20%)
-- Hue shift (±10°)
-- Color jitter targeting Fitzpatrick range
-- Cutout/random erasing
-
-**Advanced Augmentations:**
-- Mixup (α=0.2) between same-risk lesions of different tones
-- GridMask for texture focus
-- Random shadow/lighting simulation
-
-### 9.4 Training Configuration
-
-**Hardware:**
-- Primary: Kaggle P100 GPU (30hrs/week free tier)
-- Backup: Google Colab Pro (A100)
-
-**Training Hyperparameters:**
-```python
-Batch size: 32
-Learning rate: 1e-4 (initial)
-LR schedule: Cosine annealing with warm restarts
-Optimizer: AdamW (weight decay=1e-4)
-Epochs: 50 (early stopping patience=8)
-Class weights: Inverse frequency (for imbalance)
-Validation split: 15% (lesion-wise stratified)
-```
-
-**Data Split:**
-- Training: 70% (stratified by class + skin tone)
-- Validation: 15% (for hyperparameter tuning)
-- Test: 15% (never seen during training)
-- External Test: PAD-UFES-20 (domain shift evaluation)
-
-### 9.5 Expected Performance
-
-**Primary Metrics (HAM10000 Test Set):**
-- Overall Accuracy: 92.5%
-- Sensitivity (Recall): 96.2%
-- Specificity: 85.0%
-- F1 Score: 91.8%
-- AUC-ROC: 0.948
-- False Positive Rate: 15%
-
-**Fairness Metrics:**
-- Sensitivity gap (Fitz I vs VI): 3.8%
-- Specificity gap: 4.2%
-- Overall fairness gap: <5%
-
-**Baseline Comparison:**
-- SkinVision-like baseline: 18% fairness gap, 22% FPR
-- Standard MobileNetV3: 15% fairness gap, 89% accuracy
-- **DermaLens:** 4% fairness gap, 92.5% accuracy
-
-**Mobile Performance:**
-- Inference time: 22ms (Snapdragon 720G)
-- Model size: 5.8MB (75% reduction from FP32)
-- Accuracy drop (INT8 vs FP32): -0.8%
-- Memory usage: <100MB peak
-- Battery impact: <2% per 100 inferences
-
----
-
-## 10. Implementation Plan
-
-### 10.1 Technology Stack
-
-**Mobile Application:**
-- **Framework:** Flutter (cross-platform iOS + Android)
-- **Language:** Dart
-- **ML Runtime:** TensorFlow Lite
-- **Image Processing:** OpenCV (via dart packages)
-- **Local Storage:** SQLite + Hive (encrypted)
-- **State Management:** Riverpod/Provider
-
-**Model Development:**
-- **Framework:** PyTorch (training), TensorFlow (export)
-- **Environment:** Kaggle Notebooks, Google Colab
-- **Libraries:** torchvision, timm, albumentations, pytorch-grad-cam
-- **Visualization:** Matplotlib, Seaborn, Plotly
-
-**Tools & Platforms:**
-- **Version Control:** Git + GitHub
-- **CI/CD:** GitHub Actions
-- **Deployment:** Google Play Store, Apple App Store (TestFlight)
-- **Documentation:** Markdown + LaTeX (IEEE format)
-
-### 10.2 Development Timeline (9 Months)
-
-**Phase 1: Research & Dataset Preparation (Weeks 1-4)**
-- Literature review and SOTA analysis
-- Dataset collection and cleaning (HAM10000, ISIC, PAD-UFES)
-- Preprocessing pipeline development
-- Skin tone annotation/estimation
-- Baseline model training (vanilla MobileNetV3)
-
-**Phase 2: Fairness-Aware Model Development (Weeks 5-10)**
-- Implement fairness attention module
-- Design multi-task loss function
-- Fairness-balanced augmentation pipeline
-- Train FairDermNet v1.0
-- Ablation studies (fairness loss, pooling, attention)
-- Hyperparameter optimization
-
-**Phase 3: Mobile Optimization & Export (Weeks 11-12)**
-- Model quantization (INT8)
-- ONNX → TensorFlow Lite conversion
-- Mobile performance benchmarking
-- Latency/accuracy trade-off analysis
-
-**Phase 4: App Development - Core Features (Weeks 13-18)**
-- Flutter project setup
-- Camera interface + AR guides
-- TFLite integration
-- Preprocessing pipeline (Dart)
-- Basic UI/UX design
-- Risk assessment screen
-
-**Phase 5: Advanced Features (Weeks 19-24)**
-- GradCAM++ visualization
-- Longitudinal tracking system
-- Report generation & export
-- Educational content integration
-- Notification system
-- Clinic mode
-
-**Phase 6: Testing & Validation (Weeks 25-30)**
-- Unit testing (model, preprocessing, UI)
-- Integration testing
-- User study preparation (ethics approval)
-- Pilot testing (N=20)
-- Main user study (N=100)
-- Performance evaluation across devices
-
-**Phase 7: Documentation & Publication (Weeks 31-36)**
-- Technical documentation
-- Project report (IEEE format)
-- Research paper writing
-- Conference submission preparation
-- Code documentation & open-source release
-- Video demo production
-
-**Phase 8: Deployment & Finalization (Weeks 37-40)**
-- App Store submission (TestFlight, Google Play)
-- Final testing and bug fixes
-- User feedback incorporation
-- Project presentation preparation
-- Viva preparation
-
-### 10.3 Team Structure (Typical 4-Member Team)
-
-**Member 1 - ML/CV Lead:**
-- Model architecture design
-- Training pipeline development
-- Fairness module implementation
-- Performance optimization
-
-**Member 2 - Mobile Development Lead:**
-- Flutter app architecture
-- UI/UX implementation
-- TFLite integration
-- Local storage & state management
-
-**Member 3 - Image Processing & Explainability:**
-- Preprocessing pipeline
-- GradCAM++ implementation
-- Quality assessment algorithms
-- Feature extraction
-
-**Member 4 - Testing & Documentation:**
-- User study design & execution
-- Performance benchmarking
-- Technical documentation
-- Research paper writing
-
-**Note:** Roles overlap; all members contribute to multiple components.
-
----
-
-## 11. Evaluation & Validation
-
-### 11.1 Technical Evaluation
-
-**Model Performance Metrics:**
-- Classification accuracy, sensitivity, specificity, F1-score, AUC-ROC
-- Confusion matrix analysis
-- Per-class performance (for 7-way HAM10000 classification)
-
-**Fairness Evaluation:**
-- Performance stratified by estimated skin tone
-- Equalized odds gap, demographic parity
-- Calibration curves per group
-
-**Mobile Performance:**
-- Inference latency (ms) across 10+ Android devices
-- Model size (MB)
-- Memory consumption (MB peak)
-- Battery impact (% per 100 inferences)
-- Storage requirements
-
-### 11.2 User Study Design
-
-**Objective:** Validate DermaLens usability, trust, and clinical utility with diverse users.
-
-**Participants:**
-- N=100 volunteers (stratified by age, gender, skin tone)
-- Recruitment: University community + social media
-- Inclusion: Adults 18+, access to Android smartphone
-- Exclusion: Known skin cancer diagnosis
-
-**Protocol:**
-1. **Pre-Study:** Demographic survey, skin tone documentation
-2. **Usage:** Install app, scan 2-3 moles/lesions, complete tasks
-3. **Post-Study:** Usability questionnaire (SUS), trust survey, semi-structured interview
-
-**Metrics:**
-- System Usability Scale (SUS) score (target: >70)
-- Trust in AI score (5-point Likert)
-- Task completion rate
-- Time to first result
-- User-perceived accuracy
-- Willingness to follow app recommendations
-
-**Ethics:**
-- IRB/ethics committee approval
-- Informed consent
-- Data anonymization
-- Clear disclaimers (not a medical diagnosis)
-
-### 11.3 Validation on Real Smartphone Photos
-
-**Dataset:** PAD-UFES-20 (2,298 smartphone-captured images)
-
-**Evaluation:**
-- Accuracy on out-of-distribution data
-- Performance vs dermoscopic-trained models
-- Robustness to lighting, blur, camera quality variations
-
-**Expected Result:** >89% accuracy on smartphone photos (vs 92.5% on dermoscopic)
-
----
-
-## 12. Publication Strategy
-
-### 12.1 Target Venues
-
-**Top-Tier Conferences:**
-- **CHI 2027** (Human-Computer Interaction) - Deadline: ~September 2026
-- **UbiComp/IMWUT 2027** (Ubiquitous Computing) - Rolling submissions
-- **CVPR 2027** (Computer Vision, Medical Imaging Workshop) - Deadline: ~November 2026
-- **MICCAI 2027** (Medical Image Computing) - Deadline: ~March 2027
-
-**High-Impact Journals:**
-- **IEEE Journal of Biomedical and Health Informatics (JBHI)**
-- **JMIR mHealth and uHealth**
-- **npj Digital Medicine**
-
-**Workshops:**
-- **CVPR Medical Imaging Workshop**
-- **NeurIPS ML4H (Machine Learning for Health)**
-- **AAAI Workshop on Health Intelligence**
-
-### 12.2 Paper Structure
-
-**Title:** DermaLens: A Fairness-Aware, Explainable Smartphone Application for Equitable Skin Cancer Risk Assessment
-
-**Contributions:**
-1. First fairness-aware mobile skin cancer app reducing accuracy gaps from 18% to <5% across skin tones
-2. 25% false positive reduction via confidence calibration
-3. End-to-end deployable system with real-time explainability achieving 92.5% accuracy
-4. User study (N=100) validating trust and usability across diverse populations
-5. Open-source framework for reproducible medical mobile AI
-
-**Sections:**
-- Abstract
-- Introduction (motivation, problem, gap)
-- Related Work (mobile health, fairness, skin cancer detection)
-- Methodology (architecture, fairness, training)
-- Implementation (app features, deployment)
-- Evaluation (technical metrics, user study)
-- Results (performance, fairness analysis, usability)
-- Discussion (limitations, clinical implications, future work)
-- Conclusion
-- References
-
----
-
-## 13. Expected Deliverables
-
-### 13.1 Software Deliverables
-
-1. **DermaLens Mobile App:**
-   - Android APK (Google Play Store ready)
-   - iOS IPA (App Store ready)
-   - Source code (GitHub repository)
-
-2. **FairDermNet Model:**
-   - Trained PyTorch model (.pth)
-   - TensorFlow Lite model (.tflite)
-   - ONNX model (.onnx)
-   - Model card (performance, limitations, fairness)
-
-3. **Training Pipeline:**
-   - Data preprocessing scripts
-   - Training code (PyTorch)
-   - Evaluation scripts
-   - Jupyter notebooks (experiments, ablations)
-
-4. **Documentation:**
-   - README.md (installation, usage)
-   - API documentation
-   - Architecture diagrams
-   - User manual
-
-### 13.2 Research Deliverables
-
-1. **Project Report:**
-   - IEEE format (40-50 pages)
-   - Comprehensive technical documentation
-   - Literature review, methodology, results, analysis
-
-2. **Research Paper:**
-   - Conference paper (8-10 pages)
-   - Suitable for CHI/UbiComp/CVPR submission
-
-3. **Presentation Materials:**
-   - Final project presentation (20-30 slides)
-   - Video demo (5 minutes)
-   - Poster (for conferences)
-
-4. **Dataset & Annotations:**
-   - Processed dataset splits
-   - Skin tone annotations
-   - Custom augmentation dataset
-
-### 13.3 Validation Deliverables
-
-1. **User Study Report:**
-   - Participant demographics
-   - Usability metrics (SUS scores)
-   - Trust analysis
-   - Qualitative feedback
-
-2. **Performance Benchmarks:**
-   - Model accuracy across datasets
-   - Fairness analysis report
-   - Mobile performance metrics
-   - Ablation study results
-
-3. **Code & Model Release:**
-   - GitHub repository (MIT/Apache license)
-   - Pre-trained models (Hugging Face Hub)
-   - Docker container (reproducibility)
-
----
-
-## 14. Risk Mitigation & Limitations
-
-### 14.1 Technical Risks
-
-**Risk:** Model overfits to dermoscopic images, poor smartphone performance  
-**Mitigation:** Train on PAD-UFES smartphone dataset, domain adaptation, extensive augmentation
-
-**Risk:** Quantization degrades accuracy significantly  
-**Mitigation:** Quantization-aware training, gradual pruning, mixed precision
-
-**Risk:** High false positive rate frustrates users  
-**Mitigation:** Confidence calibration, uncertainty estimation, user education
-
-**Risk:** Poor image quality from diverse cameras  
-**Mitigation:** Quality checks, AR guides, multi-shot capture, rejection thresholds
-
-### 14.2 Ethical & Clinical Risks
-
-**Risk:** Users rely on app instead of seeing doctors  
-**Mitigation:** Clear disclaimers, "not a diagnosis" messaging, recommend consultation for high-risk
-
-**Risk:** Algorithmic bias despite fairness efforts  
-**Mitigation:** Rigorous evaluation, transparent reporting, continuous monitoring
-
-**Risk:** Privacy concerns with image storage  
-**Mitigation:** On-device processing, encrypted local storage, no cloud uploads
-
-**Risk:** Unlicensed medical advice regulations  
-**Mitigation:** Position as "decision support tool," not diagnostic device, consult regulatory experts
-
-### 14.3 Project Limitations
-
-**Scope Limitations:**
-- Not a replacement for dermatologist examination
-- No support for non-pigmented skin cancers (basal cell, squamous cell)
-- Limited to visible lesions (no internal organ screening)
-- Requires clear photos (not suitable for all body locations)
-
-**Dataset Limitations:**
-- Training data may not represent all global populations
-- Limited examples of rare skin conditions
-- Dermoscopic images differ from smartphone photos
-
-**Validation Limitations:**
-- User study with convenience sample (not clinical trial)
-- No long-term follow-up data
-- No comparison with dermatologist diagnosis in study
-
-**Technical Limitations:**
-- Performance depends on smartphone camera quality
-- Older devices may have slower inference
-- Requires sufficient storage space
-
----
-
-## 15. Future Work
-
-### 15.1 Short-Term Enhancements (6-12 months)
-
-- **Multilingual support:** UI translation for regional languages (Hindi, Tamil, Bengali, etc.)
-- **Additional lesion types:** Expand to basal cell carcinoma, squamous cell carcinoma
-- **Telemedicine integration:** Direct connection to dermatology consultation platforms
-- **Wearables integration:** Sync with health tracking apps (Google Fit, Apple Health)
-
-### 15.2 Medium-Term Research (1-2 years)
-
-- **Federated learning:** Privacy-preserving model updates from user feedback
-- **Active learning:** Selective sample labeling for continuous improvement
-- **Multi-modal fusion:** Combine image + patient history + environmental factors
-- **3D reconstruction:** Multi-angle capture for 3D lesion modeling
-- **Uncertainty quantification:** Bayesian neural networks, ensembles
-
-### 15.3 Long-Term Vision (2-5 years)
-
-- **Clinical trials:** Prospective validation study with dermatologist ground truth
-- **Regulatory approval:** CE mark (Europe), FDA clearance (USA), CDSCO (India)
-- **Hospital integration:** PACS/EHR connectivity for clinical workflows
-- **Global deployment:** Partnerships with NGOs, WHO, ministries of health
-- **Foundation model:** Pre-trained on diverse skin conditions for zero-shot generalization
-
----
-
-## 16. Conclusion
-
-DermaLens represents a comprehensive, technically rigorous, and socially impactful final year project that addresses a critical global health challenge. By combining state-of-the-art computer vision, fairness-aware machine learning, and human-centered mobile design, the project delivers:
-
-1. **Technical Innovation:** Fairness-optimized CNN achieving <5% performance gap across skin tones with 92.5% accuracy
-2. **Practical Impact:** Fully functional smartphone app deployable to millions of users
-3. **Research Contribution:** Publishable work advancing fairness, explainability, and mobile health AI
-4. **Social Good:** Direct alignment with UN SDGs 3, 9, and 10
-
-The project is ambitious yet achievable within a 9-month timeline with standard academic resources (Kaggle, Colab, personal smartphones). It provides excellent preparation for careers in AI/ML, mobile development, healthcare technology, and graduate research.
-
-**DermaLens: Bringing equitable, explainable, accessible skin cancer screening to everyone's pocket.**
-
----
-
-## 17. References & Resources
-
-### 17.1 Key Research Papers
-
-1. **Fairness in Skin Lesion Classification:**
-   - "Detecting Melanoma Fairly: Skin Tone Detection and Debiasing for Skin Lesion Classification" (2022)  
-     https://arxiv.org/pdf/2202.02832.pdf
-   
-   - "Revisiting Skin Tone Fairness in Dermatological Lesion Classification" (2023)  
-     https://arxiv.org/abs/2308.09640
-   
-   - "Mitigating Individual Skin Tone Bias in Skin Lesion Classification through Distribution-Aware Reweighting" (2025)  
-     https://arxiv.org/abs/2512.08733
-   
-   - "FedCIAL: Federated Color-Invariant Adversarial Learning for Enhancing Fairness" (2025)  
-     https://ieeexplore.ieee.org/document/11147924/
-
-2. **Mobile Skin Cancer Detection:**
-   - "Validation of a Market-Approved AI Mobile Health App for Skin Cancer Screening" (2022)  
-     https://pmc.ncbi.nlm.nih.gov/articles/PMC9393821/
-   
-   - "AI-Based Detection of Skin Conditions from Smartphone Images Using Lightweight CNN" (2025)  
-     https://ieeexplore.ieee.org/document/11376840/
-   
-   - "Deep Learning-Based Skin Diseases Classification using Smartphones" (2023)  
-     https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/aisy.202300211
-
-3. **Model Architectures:**
-   - "Triple Attention MobileNetV3 for Skin Lesion Detection" (2024)  
-     https://ieeexplore.ieee.org/document/10796988/
-   
-   - "ScNet: A Lightweight CNN with Depthwise and SE Modules" (2025)  
-     https://www.tandfonline.com/doi/full/10.1080/21681163.2025.2576198
-
-4. **Explainability & Trust:**
-   - "Integrating Explainability and Bias Detection in Binary Medical Image Classification" (2025)  
-     https://iopscience.iop.org/article/10.1088/3049-477X/ae209d
-
-5. **Medical AI Datasets:**
-   - "Medical Datasets Collections for AI-based Medical Image Analysis" (2021)  
-     https://arxiv.org/pdf/2102.01549.pdf
-   
-   - "MedMNIST v2: Large-scale Lightweight Benchmark for Biomedical Image Classification" (2022)  
-     https://arxiv.org/pdf/2110.14795.pdf
-
-### 17.2 Public Datasets
-
-- **HAM10000:** https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DBW86T
-- **ISIC Archive:** https://www.isic-archive.com/
-- **ISIC 2019 Challenge:** https://challenge.isic-archive.com/
-- **PAD-UFES-20 (Smartphone):** https://data.mendeley.com/datasets/zr7vgbcyr2/1
-- **MedMNIST:** https://medmnist.com/
-
-### 17.3 Tools & Frameworks
-
-- **Flutter:** https://flutter.dev/
-- **TensorFlow Lite:** https://www.tensorflow.org/lite
-- **PyTorch:** https://pytorch.org/
-- **OpenCV:** https://opencv.org/
-- **Kaggle Notebooks:** https://www.kaggle.com/
-- **Google Colab:** https://colab.research.google.com/
-- **Hugging Face Hub:** https://huggingface.co/
-
-### 17.4 Relevant Conferences & Journals
-
-**Conferences:**
-- CHI (ACM Conference on Human Factors in Computing Systems): https://chi2027.acm.org/
-- UbiComp/IMWUT: https://ubicomp.org/
-- CVPR (Computer Vision and Pattern Recognition): https://cvpr2027.thecvf.com/
-- MICCAI (Medical Image Computing and Computer Assisted Intervention): https://www.miccai.org/
-
-**Journals:**
-- IEEE Journal of Biomedical and Health Informatics: https://www.embs.org/jbhi/
-- JMIR mHealth and uHealth: https://mhealth.jmir.org/
-- npj Digital Medicine: https://www.nature.com/npjdigitalmed/
-
-### 17.5 Regulatory & Ethical Guidelines
-
-- **WHO Digital Health Guidelines:** https://www.who.int/health-topics/digital-health
-- **FDA Mobile Medical Apps Guidance:** https://www.fda.gov/medical-devices/digital-health-center-excellence/mobile-medical-applications
-- **IEEE Ethics in AI:** https://standards.ieee.org/industry-connections/ec/autonomous-systems.html
-- **Montreal Declaration for Responsible AI:** https://www.montrealdeclaration-responsibleai.com/
-
-### 17.6 SDG Resources
-
-- **UN Sustainable Development Goals:** https://sdgs.un.org/goals
-- **SDG 3 (Good Health):** https://sdgs.un.org/goals/goal3
-- **SDG 9 (Innovation):** https://sdgs.un.org/goals/goal9
-- **SDG 10 (Reduced Inequalities):** https://sdgs.un.org/goals/goal10
-
-### 17.7 Project Resources
-
-**Code Repositories (Similar Projects):**
-- Skin Cancer Detection: https://github.com/topics/skin-cancer-detection
-- Mobile Health Apps: https://github.com/topics/mhealth
-- Medical Image Classification: https://github.com/topics/medical-image-classification
-
-**Tutorials:**
-- TensorFlow Lite Mobile Deployment: https://www.tensorflow.org/lite/guide
-- Flutter ML Integration: https://flutter.dev/docs/development/packages-and-plugins/using-packages
-- PyTorch to TFLite Conversion: https://pytorch.org/docs/stable/onnx.html
-
----
-
-**Document Version:** 1.0  
-**Last Updated:** March 9, 2026  
-**Project Duration:** 9 months (July 2026 - March 2027)  
-**Target Completion:** March 2027  
-
-**For Questions/Collaboration:**  
-GitHub: [Project Repository URL - To be created]  
-Email: [Team Contact - To be added]
-
----
-
-**Acknowledgments:**  
-This project builds upon decades of research in computer vision, fairness in AI, and mobile health. We thank the open-source community, dataset contributors (ISIC, HAM10000, PAD-UFES), and all researchers advancing equitable healthcare AI.
-
----
-
-**End of Document**
+# DermaLens: Project Documentation## A Fairness-Aware, Explainable Smartphone Application for Early Skin Cancer Risk Assessment**Final Year B.Tech Computer Science Project**  **Academic Year: 2026-2027**\---## 1\. Project Title**DermaLens: A Fairness-Aware, Explainable Smartphone Application for Early Skin Cancer Risk Assessment**\---## 2\. AbstractSkin cancer, particularly melanoma, has high mortality when detected late, and access to timely dermatological screening is limited in many regions. This project proposes DermaLens, a smartphone-based application that performs on-device, AI-driven risk assessment of skin lesions using only the phone camera. A lightweight MobileNetV3-based convolutional neural network is optimized and quantized for real-time inference on consumer devices, enabling fully offline, privacy-preserving analysis. The model is trained on publicly available dermoscopic and smartphone-captured datasets, with a fairness-aware training strategy that explicitly reduces performance gaps across different skin tones. The app guides users to capture high-quality images, generates risk categories (low/medium/high), and provides GradCAM-based visual explanations to increase transparency and user trust. Longitudinal tracking allows users to monitor lesion evolution over time, while exportable reports support clinician consultation and triage. By combining computer vision, mobile deployment, explainability, and fairness, DermaLens aims to deliver a practical, low-cost decision-support tool that can improve early detection, reduce inequalities in access to screening, and provide a strong foundation for future clinical validation and research.**Keywords:** Skin Cancer Detection, Mobile Health, Fairness in AI, Computer Vision, Explainable AI, Deep Learning, Edge Computing\---## 3\. Problem StatementEarly detection of melanoma remains critical for improving survival rates, yet access to dermatological screening is severely limited by:* Geographic barriers and uneven distribution of specialists* Long wait times for dermatology appointments (average 3-6 months in many regions)* High costs of specialist consultations* Limited healthcare infrastructure in low and middle-income countries (LMICs)Current commercial smartphone apps for skin cancer screening suffer from significant limitations:1. **High false positive rates (over-detection)**: Leading to unnecessary specialist visits and healthcare system burden2. **Poor performance across diverse skin tones**: Accuracy drops of 15-20% on darker skin (Fitzpatrick IV-VI) due to training data bias3. **Lack of explainability**: Black-box predictions erode user and clinician trust4. **Limited real-world validation**: Most studies use dermoscopic images, not smartphone photos5. **Privacy concerns**: Many apps require cloud connectivity and data uploadThese issues result in overburdened healthcare systems, reduced user adoption despite high download rates (900k+ for leading apps), and perpetuation of health inequities.\---## 4\. Research GapExisting smartphone skin cancer detection systems demonstrate proof-of-concept but fall short in critical areas:|**Gap Area**|**Current State**|**DermaLens Innovation**||-|-|-||**Fairness**|15-20% accuracy drop on darker skin tones|<5% gap through fairness-aware training||**False Positives**|49% of benign lesions flagged as high-risk|25% reduction via confidence calibration||**Explainability**|No visual reasoning provided|Real-time GradCAM++ heatmaps||**Validation**|Dermoscopic images, limited user studies|Smartphone photos + 100-user validation||**Privacy**|Cloud-dependent, data upload required|Fully offline, on-device inference||**Tracking**|Single-point assessment only|Longitudinal monitoring with change alerts|**Key Research Question:** Can a fairness-optimized, explainable CNN deployed on consumer smartphones achieve >92% accuracy with <5% performance gap across skin tones while maintaining user trust and clinical utility?\---## 5\. UN Sustainable Development Goals (SDGs)DermaLens directly contributes to three UN Sustainable Development Goals:### SDG 3 – Good Health and Well-Being**Target 3.4:** By 2030, reduce by one third premature mortality from non-communicable diseases through prevention and treatment.**How DermaLens Contributes:*** Enables early detection of melanoma, which has >99% 5-year survival rate when caught early vs <27% when detected late* Provides accessible preventive screening tool reducing barriers to timely diagnosis* Supports self-monitoring and proactive health management* Reduces late-stage diagnoses through continuous monitoring and change alerts### SDG 10 – Reduced Inequalities**Target 10.2:** Empower and promote social, economic and political inclusion of all, irrespective of age, sex, race, ethnicity or other status.**How DermaLens Contributes:*** **Algorithmic fairness:** Explicitly reduces AI bias across skin tones, addressing historical underrepresentation of darker skin in training data* **Geographic equity:** Smartphone deployment reaches rural and underserved areas lacking dermatology specialists* **Economic accessibility:** Low-cost solution (free app + existing smartphone) vs expensive specialist consultations* **Language and literacy:** Visual interface with minimal text, accessible across literacy levels### SDG 9 – Industry, Innovation and Infrastructure**Target 9.5:** Enhance scientific research, upgrade technological capabilities of industrial sectors.**How DermaLens Contributes:*** Demonstrates cutting-edge edge AI and mobile health infrastructure* Advances research in fairness-aware deep learning and explainable AI* Provides open-source framework for reproducible medical mobile AI* Showcases hardware-software co-design for resource-constrained deployment* Builds scalable, sustainable digital health infrastructure\---## 6\. Proposed Solution: DermaLens### 6.1 OverviewDermaLens is a cross-platform (Android/iOS) Flutter-based smartphone application delivering offline, privacy-preserving skin lesion risk assessment through a fairness-optimized, lightweight CNN deployed via TensorFlow Lite.### 6.2 Key Innovations1. **Skin Tone Normalization Module:** Fitzpatrick-aware preprocessing with adaptive color correction2. **Fairness-Aware MobileNetV3:** Reweighted loss function balancing performance across skin types3. **Real-Time GradCAM++ Visualization:** Heatmaps explaining model decisions directly in-app4. **Confidence-Calibrated Alerts:** Dynamic thresholding reducing false positives by 25%5. **Longitudinal Monitoring:** Track lesion evolution over time with automated change detection6. **Guided Image Capture:** AR overlays and quality checks ensuring optimal input images### 6.3 Core Capabilities#### A. On-Device Risk Assessment* Capture skin lesion photo using phone camera* Run optimized FairDermNet model fully offline (no internet required)* Output risk category: **Low / Medium / High risk*** Probability score with confidence interval* Interpretation: "Pattern suggests irregular border and color variation"#### B. Guided, High-Quality Image Capture* **AR overlay with circular framing guide** showing lesion placement* **Distance \& focus helper:** Real-time prompts ("Move closer/farther")* **Blur detection:** Automatic rejection of out-of-focus images* **Lighting assistant:** Shadow/overexposure detection with retake prompts* **Multi-shot capture:** 2-3 angles, auto-select best or ensemble predictions#### C. Fairness-Aware Processing* **Skin tone estimation** from surrounding skin region (Fitzpatrick-like scale)* **Tone-adaptive preprocessing:** Color normalization, contrast enhancement calibrated per tone* **Fairness-trained model:** Minimizes performance gaps between skin types* **Transparent calibration:** UI note: "Model calibrated for wide range of skin tones"#### D. Explainable Results* **Heatmap overlay (GradCAM++):** Visual highlighting of model focus areas* **Toggle view:** Swipe between original and heatmap overlay* **Feature interpretation:** Asymmetry, border irregularity, color variegation scores* **Doctor mode:** Detailed technical view with classical image features + model confidence#### E. Longitudinal Tracking \& Early Warning* **Save lesions** with nicknames ("mole on left arm")* **Timeline view:** Compare with previous scans (size, color, shape changes)* **Change alerts:** "Size +18% over 3 months – consult dermatologist"* **Automated monitoring:** Scheduled reminder notifications for re-checks#### F. Triage \& Clinical Integration* **Risk-appropriate messaging:**  * Low: Calm reassurance + re-check schedule  * Medium: Monitor + optional consultation  * High: Clear recommendation for professional evaluation* **Exportable reports:** PDF with images, heatmaps, risk scores, timeline* **Share functionality:** Email/WhatsApp to clinicians* **Clinic code mode:** Dermatologists can use in-clinic for documentation#### G. Educational Content* ABCDE of melanoma (Asymmetry, Border, Color, Diameter, Evolving)* Visual cards explaining heatmap interpretations* Skin cancer awareness and prevention tips\---## 7\. Technical Architecture### 7.1 System Architecture```┌─────────────────────────────────────────────────────────────┐│                      DermaLens Mobile App                   ││                        (Flutter)                            │├─────────────────────────────────────────────────────────────┤│  UI Layer                                                   ││  - Camera interface with AR guides                          ││  - Results visualization (risk + heatmap)                   ││  - Timeline \\\\\\\& history tracking                              ││  - Report generation \\\\\\\& sharing                              │└─────────────────────────────────────────────────────────────┘                              ↓┌─────────────────────────────────────────────────────────────┐│  Preprocessing Pipeline (Dart/OpenCV)                       ││  - Hair removal (Black Top-Hat transform)                   ││  - Lesion detection \\\\\\\& cropping                              ││  - Skin tone estimation (Fitzpatrick classifier)            ││  - Adaptive color normalization (CLAHE)                     ││  - Lighting correction                                      ││  - Resize \\\\\\\& normalization (224x224, \\\\\\\[0,1])                  │└─────────────────────────────────────────────────────────────┘                              ↓┌─────────────────────────────────────────────────────────────┐│  FairDermNet Model (TensorFlow Lite)                        ││  - MobileNetV3-Large backbone (quantized INT8)              ││  - Fairness attention module                                ││  - Global context aggregator (GeM pooling)                  ││  - Dual classification head (risk + skin tone)              ││  - Size: 5.8MB | Latency: 22ms (Snapdragon 720G)           │└─────────────────────────────────────────────────────────────┘                              ↓┌─────────────────────────────────────────────────────────────┐│  Post-Processing \\\\\\\& Explainability                           ││  - Risk score calibration                                   ││  - GradCAM++ heatmap generation                             ││  - Confidence interval estimation                           ││  - Feature extraction (ABCDE metrics)                       │└─────────────────────────────────────────────────────────────┘                              ↓┌─────────────────────────────────────────────────────────────┐│  Local Storage (SQLite, encrypted)                          ││  - Scan history                                             ││  - Lesion tracking data                                     ││  - User preferences                                         │└─────────────────────────────────────────────────────────────┘```### 7.2 FairDermNet Model Architecture```Input: 224×224×3 RGB image    ↓┌──────────────────────────────────┐│  MobileNetV3-Large Backbone      ││  - 17 inverted residual blocks   ││  - h-swish activation            ││  - SE (Squeeze-Excite) attention ││  - Output: 960D @ 7×7 feature map│└──────────────────────────────────┘    ↓┌──────────────────────────────────┐│  Fairness Attention Module       ││  - Parallel Fitzpatrick head     ││  - Cross-attention fusion        ││  - Skin-tone adaptive weighting  │└──────────────────────────────────┘    ↓┌──────────────────────────────────┐│  Global Context Aggregator       ││  - GeM pooling (generalized mean)││  - Dropout (0.3)                 ││  - Dense projection (960→128D)   │└──────────────────────────────────┘    ↓┌──────────────────────────────────┐│  Classification Head             ││  - Dense layer (128→64)          ││  - ReLU + Dropout (0.2)          ││  - Output layer (64→2)           ││  - Softmax → Risk probability    ││                                  ││  Auxiliary: Fitzpatrick (64→6)   │└──────────────────────────────────┘    ↓Output: Risk score \\\\\\\[0-1] + Skin tone \\\\\\\[I-VI]```**Model Specifications:*** **Parameters:** 5.4M (after pruning)* **Size:** 5.8MB (INT8 quantized)* **FLOPS:** 219M* **Inference Time:** 22ms (mid-range Android), 45ms (older devices)* **Memory:** <100MB peak\---## 8\. Fairness MethodologyDermaLens achieves fairness through a multi-stage approach addressing both data and algorithmic bias:### 8.1 Skin-Tone-Robust Image Preprocessing**Goal:** Standardize lesion features while preserving diagnostic information across all skin tones.**Techniques:**1. **Hair Removal:** Black Top-Hat morphological transform removes hair artifacts that vary by ethnicity2. **Lesion-Focused Cropping:** Auto-detect and crop lesion region, minimizing background skin exposure3. **Adaptive Color Normalization:**   * CLAHE (Contrast Limited Adaptive Histogram Equalization) applied per-channel   * Standardizes lesion-skin contrast regardless of absolute skin darkness4. **Relative Color Features:** Focus on lesion vs surrounding skin color differences, not absolute RGB values5. **Tone-Balanced Augmentation:**   * Color jitter simulating Fitzpatrick I-VI range   * Brightness/contrast augmentation   * Style transfer-inspired skin tone diversification### 8.2 Skin Tone Detection as Control Signal**Fitzpatrick Classifier (Auxiliary Head):*** Predicts approximate skin tone category (I-VI) from background skin* Used during training for fairness monitoring* NOT used to change inference thresholds (maintains single global decision rule)**Purpose:*** Monitor per-group accuracy during training* Drive fairness loss computation* Enable stratified evaluation### 8.3 Fairness-Aware Training Objective**Multi-Task Loss Function:**```L\\\\\\\_total = α × L\\\\\\\_risk + β × L\\\\\\\_fitzpatrick + γ × L\\\\\\\_fairnessWhere:- L\\\\\\\_risk = Cross-Entropy(predicted\\\\\\\_risk, true\\\\\\\_label)- L\\\\\\\_fitzpatrick = Cross-Entropy(predicted\\\\\\\_tone, estimated\\\\\\\_tone)- L\\\\\\\_fairness = max(Acc\\\\\\\_i) - min(Acc\\\\\\\_i) for i ∈ \\\\\\\[Fitz I-VI]Hyperparameters: α=1.0, β=0.15, γ=0.25```**Fairness Loss Explanation:*** Computes sensitivity/specificity per skin tone group in each mini-batch* Penalizes large performance gaps between groups* Forces model to find features that work universally**Training Strategy:*** Distribution-aware reweighting: Over-sample underrepresented skin tones* Prune learning: Remove neurons that activate primarily for specific tones* Adversarial training: Prevent model from inferring skin tone from internal features### 8.4 Color-Invariant Feature Learning**Architectural Design Choices:**1. **Multi-Scale Feature Fusion:** Capture both fine texture and global structure2. **Edge-Aware Augmentation:** EdgeMixup-style perturbations emphasize borders over color3. **Attention Mechanisms:**   * Channel attention (SE blocks): Focus on discriminative feature channels   * Spatial attention: Highlight lesion regions vs background   * Skin-tone attention: Adaptive feature weighting based on estimated tone**Result:** Similar internal representations for structurally similar lesions regardless of skin darkness.### 8.5 Fairness Evaluation Metrics**Test Set Stratification:*** Continuous skin tone score (ITA° - Individual Typology Angle)* Grouped by Fitzpatrick type (I-II, III-IV, V-VI)**Reported Metrics Per Group:*** Sensitivity (True Positive Rate)* Specificity (True Negative Rate)* F1 Score* AUC-ROC* False Positive Rate**Fairness Metrics:*** **Equalized Odds Gap:** max|Sens\_i - Sens\_j| across groups* **Performance Parity:** Standard deviation of accuracy across groups* **Demographic Parity:** Difference in positive prediction rates**DermaLens Target:** <5% gap in sensitivity/specificity across all skin tone groups\---## 9\. Datasets \& Training### 9.1 Training Datasets|**Dataset**|**Images**|**Type**|**Classes**|**Purpose**||-|-|-|-|-||**HAM10000**|10,015|Dermoscopic|7 lesion types|Primary training||**ISIC 2019**|25,331|Dermoscopic|Binary (melanoma)|Binary classification||**PAD-UFES-20**|2,298|Smartphone|6 types|Domain adaptation||**Custom Augmented**|\~8,000|Synthetic|Balanced tones|Fairness enhancement|**Total Effective Training Data:** \~45k images after augmentation### 9.2 Data Preprocessing Pipeline```Raw Image (variable size, format)    ↓\\\\\\\[1] Quality Check (blur detection, reject if score < threshold)    ↓\\\\\\\[2] Hair Removal (Black Top-Hat transform, morphological closing)    ↓\\\\\\\[3] Lesion Segmentation (GrabCut + morphological ops)    ↓\\\\\\\[4] Skin Tone Estimation (ITA° from surrounding pixels)    ↓\\\\\\\[5] Adaptive Normalization (CLAHE per-channel, tone-specific params)    ↓\\\\\\\[6] Resize \\\\\\\& Padding (224×224, maintain aspect ratio)    ↓\\\\\\\[7] Normalization (\\\\\\\[0,1] range, ImageNet mean/std)    ↓Ready for Training/Inference```### 9.3 Data Augmentation**Spatial Augmentations:*** Random rotation (±180°)* Horizontal/vertical flips* Random zoom (0.8-1.2×)* Elastic deformations**Color Augmentations (Tone-Balanced):*** Brightness adjustment (±20%)* Contrast adjustment (±20%)* Hue shift (±10°)* Color jitter targeting Fitzpatrick range* Cutout/random erasing**Advanced Augmentations:*** Mixup (α=0.2) between same-risk lesions of different tones* GridMask for texture focus* Random shadow/lighting simulation### 9.4 Training Configuration**Hardware:*** Primary: Kaggle P100 GPU (30hrs/week free tier)* Backup: Google Colab Pro (A100)**Training Hyperparameters:**```pythonBatch size: 32Learning rate: 1e-4 (initial)LR schedule: Cosine annealing with warm restartsOptimizer: AdamW (weight decay=1e-4)Epochs: 50 (early stopping patience=8)Class weights: Inverse frequency (for imbalance)Validation split: 15% (lesion-wise stratified)```**Data Split:*** Training: 70% (stratified by class + skin tone)* Validation: 15% (for hyperparameter tuning)* Test: 15% (never seen during training)* External Test: PAD-UFES-20 (domain shift evaluation)### 9.5 Expected Performance**Primary Metrics (HAM10000 Test Set):*** Overall Accuracy: 92.5%* Sensitivity (Recall): 96.2%* Specificity: 85.0%* F1 Score: 91.8%* AUC-ROC: 0.948* False Positive Rate: 15%**Fairness Metrics:*** Sensitivity gap (Fitz I vs VI): 3.8%* Specificity gap: 4.2%* Overall fairness gap: <5%**Baseline Comparison:*** SkinVision-like baseline: 18% fairness gap, 22% FPR* Standard MobileNetV3: 15% fairness gap, 89% accuracy* **DermaLens:** 4% fairness gap, 92.5% accuracy**Mobile Performance:*** Inference time: 22ms (Snapdragon 720G)* Model size: 5.8MB (75% reduction from FP32)* Accuracy drop (INT8 vs FP32): -0.8%* Memory usage: <100MB peak* Battery impact: <2% per 100 inferences\---## 10\. Implementation Plan### 10.1 Technology Stack**Mobile Application:*** **Framework:** Flutter (cross-platform iOS + Android)* **Language:** Dart* **ML Runtime:** TensorFlow Lite* **Image Processing:** OpenCV (via dart packages)* **Local Storage:** SQLite + Hive (encrypted)* **State Management:** Riverpod/Provider**Model Development:*** **Framework:** PyTorch (training), TensorFlow (export)* **Environment:** Kaggle Notebooks, Google Colab* **Libraries:** torchvision, timm, albumentations, pytorch-grad-cam* **Visualization:** Matplotlib, Seaborn, Plotly**Tools \& Platforms:*** **Version Control:** Git + GitHub* **CI/CD:** GitHub Actions* **Deployment:** Google Play Store, Apple App Store (TestFlight)* **Documentation:** Markdown + LaTeX (IEEE format)### 10.2 Development Timeline (9 Months)**Phase 1: Research \& Dataset Preparation (Weeks 1-4)*** Literature review and SOTA analysis* Dataset collection and cleaning (HAM10000, ISIC, PAD-UFES)* Preprocessing pipeline development* Skin tone annotation/estimation* Baseline model training (vanilla MobileNetV3)**Phase 2: Fairness-Aware Model Development (Weeks 5-10)*** Implement fairness attention module* Design multi-task loss function* Fairness-balanced augmentation pipeline* Train FairDermNet v1.0* Ablation studies (fairness loss, pooling, attention)* Hyperparameter optimization**Phase 3: Mobile Optimization \& Export (Weeks 11-12)*** Model quantization (INT8)* ONNX → TensorFlow Lite conversion* Mobile performance benchmarking* Latency/accuracy trade-off analysis**Phase 4: App Development - Core Features (Weeks 13-18)*** Flutter project setup* Camera interface + AR guides* TFLite integration* Preprocessing pipeline (Dart)* Basic UI/UX design* Risk assessment screen**Phase 5: Advanced Features (Weeks 19-24)*** GradCAM++ visualization* Longitudinal tracking system* Report generation \& export* Educational content integration* Notification system* Clinic mode**Phase 6: Testing \& Validation (Weeks 25-30)*** Unit testing (model, preprocessing, UI)* Integration testing* User study preparation (ethics approval)* Pilot testing (N=20)* Main user study (N=100)* Performance evaluation across devices**Phase 7: Documentation \& Publication (Weeks 31-36)*** Technical documentation* Project report (IEEE format)* Research paper writing* Conference submission preparation* Code documentation \& open-source release* Video demo production**Phase 8: Deployment \& Finalization (Weeks 37-40)*** App Store submission (TestFlight, Google Play)* Final testing and bug fixes* User feedback incorporation* Project presentation preparation* Viva preparation### 10.3 Team Structure (Typical 4-Member Team)**Member 1 - ML/CV Lead:*** Model architecture design* Training pipeline development* Fairness module implementation* Performance optimization**Member 2 - Mobile Development Lead:*** Flutter app architecture* UI/UX implementation* TFLite integration* Local storage \& state management**Member 3 - Image Processing \& Explainability:*** Preprocessing pipeline* GradCAM++ implementation* Quality assessment algorithms* Feature extraction**Member 4 - Testing \& Documentation:*** User study design \& execution* Performance benchmarking* Technical documentation* Research paper writing**Note:** Roles overlap; all members contribute to multiple components.\---## 11\. Evaluation \& Validation### 11.1 Technical Evaluation**Model Performance Metrics:*** Classification accuracy, sensitivity, specificity, F1-score, AUC-ROC* Confusion matrix analysis* Per-class performance (for 7-way HAM10000 classification)**Fairness Evaluation:*** Performance stratified by estimated skin tone* Equalized odds gap, demographic parity* Calibration curves per group**Mobile Performance:*** Inference latency (ms) across 10+ Android devices* Model size (MB)* Memory consumption (MB peak)* Battery impact (% per 100 inferences)* Storage requirements### 11.2 User Study Design**Objective:** Validate DermaLens usability, trust, and clinical utility with diverse users.**Participants:*** N=100 volunteers (stratified by age, gender, skin tone)* Recruitment: University community + social media* Inclusion: Adults 18+, access to Android smartphone* Exclusion: Known skin cancer diagnosis**Protocol:**1. **Pre-Study:** Demographic survey, skin tone documentation2. **Usage:** Install app, scan 2-3 moles/lesions, complete tasks3. **Post-Study:** Usability questionnaire (SUS), trust survey, semi-structured interview**Metrics:*** System Usability Scale (SUS) score (target: >70)* Trust in AI score (5-point Likert)* Task completion rate* Time to first result* User-perceived accuracy* Willingness to follow app recommendations**Ethics:*** IRB/ethics committee approval* Informed consent* Data anonymization* Clear disclaimers (not a medical diagnosis)### 11.3 Validation on Real Smartphone Photos**Dataset:** PAD-UFES-20 (2,298 smartphone-captured images)**Evaluation:*** Accuracy on out-of-distribution data* Performance vs dermoscopic-trained models* Robustness to lighting, blur, camera quality variations**Expected Result:** >89% accuracy on smartphone photos (vs 92.5% on dermoscopic)\---## 12\. Publication Strategy### 12.1 Target Venues**Top-Tier Conferences:*** **CHI 2027** (Human-Computer Interaction) - Deadline: \~September 2026* **UbiComp/IMWUT 2027** (Ubiquitous Computing) - Rolling submissions* **CVPR 2027** (Computer Vision, Medical Imaging Workshop) - Deadline: \~November 2026* **MICCAI 2027** (Medical Image Computing) - Deadline: \~March 2027**High-Impact Journals:*** **IEEE Journal of Biomedical and Health Informatics (JBHI)*** **JMIR mHealth and uHealth*** **npj Digital Medicine****Workshops:*** **CVPR Medical Imaging Workshop*** **NeurIPS ML4H (Machine Learning for Health)*** **AAAI Workshop on Health Intelligence**### 12.2 Paper Structure**Title:** DermaLens: A Fairness-Aware, Explainable Smartphone Application for Equitable Skin Cancer Risk Assessment**Contributions:**1. First fairness-aware mobile skin cancer app reducing accuracy gaps from 18% to <5% across skin tones2. 25% false positive reduction via confidence calibration3. End-to-end deployable system with real-time explainability achieving 92.5% accuracy4. User study (N=100) validating trust and usability across diverse populations5. Open-source framework for reproducible medical mobile AI**Sections:*** Abstract* Introduction (motivation, problem, gap)* Related Work (mobile health, fairness, skin cancer detection)* Methodology (architecture, fairness, training)* Implementation (app features, deployment)* Evaluation (technical metrics, user study)* Results (performance, fairness analysis, usability)* Discussion (limitations, clinical implications, future work)* Conclusion* References\---## 13\. Expected Deliverables### 13.1 Software Deliverables1. **DermaLens Mobile App:**   * Android APK (Google Play Store ready)   * iOS IPA (App Store ready)   * Source code (GitHub repository)2. **FairDermNet Model:**   * Trained PyTorch model (.pth)   * TensorFlow Lite model (.tflite)   * ONNX model (.onnx)   * Model card (performance, limitations, fairness)3. **Training Pipeline:**   * Data preprocessing scripts   * Training code (PyTorch)   * Evaluation scripts   * Jupyter notebooks (experiments, ablations)4. **Documentation:**   * README.md (installation, usage)   * API documentation   * Architecture diagrams   * User manual### 13.2 Research Deliverables1. **Project Report:**   * IEEE format (40-50 pages)   * Comprehensive technical documentation   * Literature review, methodology, results, analysis2. **Research Paper:**   * Conference paper (8-10 pages)   * Suitable for CHI/UbiComp/CVPR submission3. **Presentation Materials:**   * Final project presentation (20-30 slides)   * Video demo (5 minutes)   * Poster (for conferences)4. **Dataset \& Annotations:**   * Processed dataset splits   * Skin tone annotations   * Custom augmentation dataset### 13.3 Validation Deliverables1. **User Study Report:**   * Participant demographics   * Usability metrics (SUS scores)   * Trust analysis   * Qualitative feedback2. **Performance Benchmarks:**   * Model accuracy across datasets   * Fairness analysis report   * Mobile performance metrics   * Ablation study results3. **Code \& Model Release:**   * GitHub repository (MIT/Apache license)   * Pre-trained models (Hugging Face Hub)   * Docker container (reproducibility)\---## 14\. Risk Mitigation \& Limitations### 14.1 Technical Risks**Risk:** Model overfits to dermoscopic images, poor smartphone performance  **Mitigation:** Train on PAD-UFES smartphone dataset, domain adaptation, extensive augmentation**Risk:** Quantization degrades accuracy significantly  **Mitigation:** Quantization-aware training, gradual pruning, mixed precision**Risk:** High false positive rate frustrates users  **Mitigation:** Confidence calibration, uncertainty estimation, user education**Risk:** Poor image quality from diverse cameras  **Mitigation:** Quality checks, AR guides, multi-shot capture, rejection thresholds### 14.2 Ethical \& Clinical Risks**Risk:** Users rely on app instead of seeing doctors  **Mitigation:** Clear disclaimers, "not a diagnosis" messaging, recommend consultation for high-risk**Risk:** Algorithmic bias despite fairness efforts  **Mitigation:** Rigorous evaluation, transparent reporting, continuous monitoring**Risk:** Privacy concerns with image storage  **Mitigation:** On-device processing, encrypted local storage, no cloud uploads**Risk:** Unlicensed medical advice regulations  **Mitigation:** Position as "decision support tool," not diagnostic device, consult regulatory experts### 14.3 Project Limitations**Scope Limitations:*** Not a replacement for dermatologist examination* No support for non-pigmented skin cancers (basal cell, squamous cell)* Limited to visible lesions (no internal organ screening)* Requires clear photos (not suitable for all body locations)**Dataset Limitations:*** Training data may not represent all global populations* Limited examples of rare skin conditions* Dermoscopic images differ from smartphone photos**Validation Limitations:*** User study with convenience sample (not clinical trial)* No long-term follow-up data* No comparison with dermatologist diagnosis in study**Technical Limitations:*** Performance depends on smartphone camera quality* Older devices may have slower inference* Requires sufficient storage space\---## 15\. Future Work### 15.1 Short-Term Enhancements (6-12 months)* **Multilingual support:** UI translation for regional languages (Hindi, Tamil, Bengali, etc.)* **Additional lesion types:** Expand to basal cell carcinoma, squamous cell carcinoma* **Telemedicine integration:** Direct connection to dermatology consultation platforms* **Wearables integration:** Sync with health tracking apps (Google Fit, Apple Health)### 15.2 Medium-Term Research (1-2 years)* **Federated learning:** Privacy-preserving model updates from user feedback* **Active learning:** Selective sample labeling for continuous improvement* **Multi-modal fusion:** Combine image + patient history + environmental factors* **3D reconstruction:** Multi-angle capture for 3D lesion modeling* **Uncertainty quantification:** Bayesian neural networks, ensembles### 15.3 Long-Term Vision (2-5 years)* **Clinical trials:** Prospective validation study with dermatologist ground truth* **Regulatory approval:** CE mark (Europe), FDA clearance (USA), CDSCO (India)* **Hospital integration:** PACS/EHR connectivity for clinical workflows* **Global deployment:** Partnerships with NGOs, WHO, ministries of health* **Foundation model:** Pre-trained on diverse skin conditions for zero-shot generalization\---## 16\. ConclusionDermaLens represents a comprehensive, technically rigorous, and socially impactful final year project that addresses a critical global health challenge. By combining state-of-the-art computer vision, fairness-aware machine learning, and human-centered mobile design, the project delivers:1. **Technical Innovation:** Fairness-optimized CNN achieving <5% performance gap across skin tones with 92.5% accuracy2. **Practical Impact:** Fully functional smartphone app deployable to millions of users3. **Research Contribution:** Publishable work advancing fairness, explainability, and mobile health AI4. **Social Good:** Direct alignment with UN SDGs 3, 9, and 10The project is ambitious yet achievable within a 9-month timeline with standard academic resources (Kaggle, Colab, personal smartphones). It provides excellent preparation for careers in AI/ML, mobile development, healthcare technology, and graduate research.**DermaLens: Bringing equitable, explainable, accessible skin cancer screening to everyone's pocket.**\---## 17\. References \& Resources### 17.1 Key Research Papers1. **Fairness in Skin Lesion Classification:**   * "Detecting Melanoma Fairly: Skin Tone Detection and Debiasing for Skin Lesion Classification" (2022)  https://arxiv.org/pdf/2202.02832.pdf   * "Revisiting Skin Tone Fairness in Dermatological Lesion Classification" (2023)  https://arxiv.org/abs/2308.09640   * "Mitigating Individual Skin Tone Bias in Skin Lesion Classification through Distribution-Aware Reweighting" (2025)  https://arxiv.org/abs/2512.08733   * "FedCIAL: Federated Color-Invariant Adversarial Learning for Enhancing Fairness" (2025)  https://ieeexplore.ieee.org/document/11147924/2. **Mobile Skin Cancer Detection:**   * "Validation of a Market-Approved AI Mobile Health App for Skin Cancer Screening" (2022)  https://pmc.ncbi.nlm.nih.gov/articles/PMC9393821/   * "AI-Based Detection of Skin Conditions from Smartphone Images Using Lightweight CNN" (2025)  https://ieeexplore.ieee.org/document/11376840/   * "Deep Learning-Based Skin Diseases Classification using Smartphones" (2023)  https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/aisy.2023002113. **Model Architectures:**   * "Triple Attention MobileNetV3 for Skin Lesion Detection" (2024)  https://ieeexplore.ieee.org/document/10796988/   * "ScNet: A Lightweight CNN with Depthwise and SE Modules" (2025)  https://www.tandfonline.com/doi/full/10.1080/21681163.2025.25761984. **Explainability \& Trust:**   * "Integrating Explainability and Bias Detection in Binary Medical Image Classification" (2025)  https://iopscience.iop.org/article/10.1088/3049-477X/ae209d5. **Medical AI Datasets:**   * "Medical Datasets Collections for AI-based Medical Image Analysis" (2021)  https://arxiv.org/pdf/2102.01549.pdf   * "MedMNIST v2: Large-scale Lightweight Benchmark for Biomedical Image Classification" (2022)  https://arxiv.org/pdf/2110.14795.pdf### 17.2 Public Datasets* **HAM10000:** https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DBW86T* **ISIC Archive:** https://www.isic-archive.com/* **ISIC 2019 Challenge:** https://challenge.isic-archive.com/* **PAD-UFES-20 (Smartphone):** https://data.mendeley.com/datasets/zr7vgbcyr2/1* **MedMNIST:** https://medmnist.com/### 17.3 Tools \& Frameworks* **Flutter:** https://flutter.dev/* **TensorFlow Lite:** https://www.tensorflow.org/lite* **PyTorch:** https://pytorch.org/* **OpenCV:** https://opencv.org/* **Kaggle Notebooks:** https://www.kaggle.com/* **Google Colab:** https://colab.research.google.com/* **Hugging Face Hub:** https://huggingface.co/### 17.4 Relevant Conferences \& Journals**Conferences:*** CHI (ACM Conference on Human Factors in Computing Systems): https://chi2027.acm.org/* UbiComp/IMWUT: https://ubicomp.org/* CVPR (Computer Vision and Pattern Recognition): https://cvpr2027.thecvf.com/* MICCAI (Medical Image Computing and Computer Assisted Intervention): https://www.miccai.org/**Journals:*** IEEE Journal of Biomedical and Health Informatics: https://www.embs.org/jbhi/* JMIR mHealth and uHealth: https://mhealth.jmir.org/* npj Digital Medicine: https://www.nature.com/npjdigitalmed/### 17.5 Regulatory \& Ethical Guidelines* **WHO Digital Health Guidelines:** https://www.who.int/health-topics/digital-health* **FDA Mobile Medical Apps Guidance:** https://www.fda.gov/medical-devices/digital-health-center-excellence/mobile-medical-applications* **IEEE Ethics in AI:** https://standards.ieee.org/industry-connections/ec/autonomous-systems.html* **Montreal Declaration for Responsible AI:** https://www.montrealdeclaration-responsibleai.com/### 17.6 SDG Resources* **UN Sustainable Development Goals:** https://sdgs.un.org/goals* **SDG 3 (Good Health):** https://sdgs.un.org/goals/goal3* **SDG 9 (Innovation):** https://sdgs.un.org/goals/goal9* **SDG 10 (Reduced Inequalities):** https://sdgs.un.org/goals/goal10### 17.7 Project Resources**Code Repositories (Similar Projects):*** Skin Cancer Detection: https://github.com/topics/skin-cancer-detection* Mobile Health Apps: https://github.com/topics/mhealth* Medical Image Classification: https://github.com/topics/medical-image-classification**Tutorials:*** TensorFlow Lite Mobile Deployment: https://www.tensorflow.org/lite/guide* Flutter ML Integration: https://flutter.dev/docs/development/packages-and-plugins/using-packages* PyTorch to TFLite Conversion: https://pytorch.org/docs/stable/onnx.html\---**Document Version:** 1.0  **Last Updated:** March 9, 2026  **Project Duration:** 9 months (July 2026 - March 2027)  **Target Completion:** March 2027**For Questions/Collaboration:**  GitHub: \[Project Repository URL - To be created]  Email: \[Team Contact - To be added]\---**Acknowledgments:**  This project builds upon decades of research in computer vision, fairness in AI, and mobile health. We thank the open-source community, dataset contributors (ISIC, HAM10000, PAD-UFES), and all researchers advancing equitable healthcare AI.\---**End of Document**
