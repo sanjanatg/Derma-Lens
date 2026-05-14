@@ -52,5 +52,6 @@ class ModelCheckpoint:
         if improved:
             self.best = value
             save_checkpoint(model, optimizer, epoch, value, self.path)
+            print(f"  💾 Checkpoint saved: {self.monitor}={value:.4f}")
             return True
         return False

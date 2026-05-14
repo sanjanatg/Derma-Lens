@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Find a Dermatologist - DermaLens</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#f3f0e9",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#c2cba3",
+                        "primary": "#5a6241",
+                        "surface-bright": "#fcf9f2",
+                        "surface-container-low": "#f6f3ec",
+                        "surface-container-high": "#ebe8e1",
+                        "on-primary-container": "#3b4325",
+                        "secondary-container": "#fadcd1",
+                        "tertiary": "#70566c",
+                        "surface-container-highest": "#e5e2db",
+                        "background": "#fcf9f2",
+                        "outline-variant": "#c7c7bb",
+                        "on-primary-fixed": "#171e05",
+                        "tertiary-fixed": "#fbd9f2",
+                        "primary-fixed": "#dee7be",
+                        "secondary-fixed": "#fadcd1",
+                        "on-secondary-fixed": "#271811",
+                        "on-secondary-container": "#756057",
+                        "surface": "#fcf9f2",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#31312c",
+                        "secondary-fixed-dim": "#ddc1b6",
+                        "on-tertiary-fixed-variant": "#573f53",
+                        "on-surface-variant": "#46483e",
+                        "on-background": "#1c1c18",
+                        "on-primary-fixed-variant": "#424a2c",
+                        "secondary": "#6f5a51",
+                        "tertiary-fixed-dim": "#ddbdd6",
+                        "on-error": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#5a6241",
+                        "on-tertiary-container": "#50394d",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#56423a",
+                        "outline": "#77786d",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "inverse-primary": "#c2cba3",
+                        "surface-variant": "#e5e2db",
+                        "surface-container": "#f1eee7",
+                        "surface-dim": "#dcdad3",
+                        "on-surface": "#1c1c18",
+                        "primary-container": "#a7b08a",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "display": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fcf9f2; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .stars-fill { font-variation-settings: 'FILL' 1; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/70 dark:bg-surface/70 backdrop-blur-md flex items-center justify-between px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim">arrow_back</span>
+</button>
+<h1 class="font-display text-headline-md tracking-tight font-bold text-on-surface dark:text-inverse-on-surface">DermaLens</h1>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional close-up studio portrait of a person with glowing, healthy skin, reflecting a high-end skincare aesthetic. The lighting is soft and warm, reminiscent of a premium wellness brand, set against a muted sage and linen white background. The composition is clean and minimalist, emphasizing natural beauty and clarity in an editorial style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCx2HIW3JOASheTf4gsBnbF_LIpT06dskVGganr87_wjXgLkHzVviZDaFcBT03GoLMLeZI6oy457bfMn2jbx_CUo81Z33vcSXXTP43Kl0gVB-gyV-8_RlcdDXCkqZh5l4BqY22uFptX53vM9d2hZtkTgmVS9t5_pbNHMshMZk-YK15TbWP_XfninxkD-LBi4q5UtkCgmJ_x7E3yTtKNCVbqOOGTqbhwqEzA5njvf7IZ7bszZskQDeOynaz45inKsIuFJZZY1sWU--g"/>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto">
+<!-- Headline Section -->
+<div class="mb-8">
+<h2 class="font-display text-headline-md font-extrabold tracking-tight text-on-surface mt-4 mb-2">Find a Dermatologist</h2>
+<p class="text-on-surface-variant body-lg leading-relaxed max-w-md">Connect with top-rated skin specialists in your area for professional clinical consultation.</p>
+</div>
+<!-- Search Bar -->
+<div class="mb-8 group">
+<div class="flex items-center bg-surface-container-low rounded-full px-6 py-4 focus-within:bg-surface-container-highest transition-colors duration-300">
+<span class="material-symbols-outlined text-primary mr-3">location_on</span>
+<input class="bg-transparent border-none focus:ring-0 w-full text-on-surface placeholder:text-on-surface-variant/60 font-medium" placeholder="Search by city or zip code..." type="text"/>
+<span class="material-symbols-outlined text-on-surface-variant">tune</span>
+</div>
+</div>
+<!-- Map View Component (Asymmetric Canvas) -->
+<section class="mb-12">
+<div class="relative w-full h-[320px] rounded-xl overflow-hidden bg-surface-container shadow-[0_8px_24px_rgba(28,28,24,0.04)]">
+<!-- Mock Map Pattern -->
+<div class="absolute inset-0 opacity-40" data-location="San Francisco" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCzOtyy7F8C1oHqxn_BvfY0y1FD353b_g12HlJ53dgg_pZBV3140ggwHTwgIX9xQBzD9LSzpksjuk2AQWJ_OCvlActBktity50mfjsjYKIYHkfX2n2lM60nOSWmK6sCH-j5uNwXu598mLypleEwcs2ZtVBZTRDWlozb8tU5cQmzckOM7S3wuNKHyvhgdrNKNB_tAbtP6W7r8UnhKA1UVKonhjvHVXK1ALoVhT1RISpsge89hHR2nQzRuP_tU-x8oBoFAk9KhVF1Y4I'); background-size: cover;">
+<img alt="Map View" class="w-full h-full object-cover grayscale-[0.2] contrast-[0.9]" data-alt="An artistic, high-contrast overhead map view of a modern urban neighborhood with soft, earthy tones. The aesthetic is clean and minimal, featuring muted sage greens for parks and linen white for building structures. The lighting is a soft afternoon glow, creating a professional and calm atmosphere suitable for a premium medical application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNsxum-HrrzjRRkx_qoDeexfwEpf3VdubQimS1emdjLHidZnlR2Zogc7r8GI4PAR55xrK6piZby3XMtt96mSYYyDh2tUj9VwJSIQzA2F7O-M0_aa310m2oFYp2lKiT52fxJ0ezJJZGuHc_Fa4p4cbORZIlZlflFFcFtI5O0etOCnwKMNI65slOIO32NzSLDSCKp2yLdYp71z2EUJqJzF80A5zdqd5_w_87FqaXM51WNuq2gUS7kZdYDSCZPn5x1gX9YX68ikLDt5U"/>
+</div>
+<!-- Pins -->
+<div class="absolute top-1/4 left-1/3">
+<div class="relative group cursor-pointer">
+<span class="material-symbols-outlined text-primary text-4xl stars-fill animate-pulse">location_on</span>
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-surface px-3 py-1 rounded-full shadow-lg text-[10px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">Dr. Aris</div>
+</div>
+</div>
+<div class="absolute bottom-1/3 right-1/4">
+<span class="material-symbols-outlined text-primary text-4xl stars-fill">location_on</span>
+</div>
+<div class="absolute top-1/2 right-1/2 translate-x-8 -translate-y-4">
+<span class="material-symbols-outlined text-primary text-3xl stars-fill opacity-60">location_on</span>
+</div>
+<!-- Floating Legend -->
+<div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+<div class="bg-surface/90 backdrop-blur-md p-3 rounded-lg shadow-sm border border-outline-variant/10">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Current Focus</p>
+<p class="text-sm font-semibold">Downtown Medical District</p>
+</div>
+<button class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Dermatologist List -->
+<section class="space-y-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline text-lg font-bold">Top Specialists Nearby</h3>
+<button class="text-primary font-bold text-sm">View All</button>
+</div>
+<!-- Card 1 -->
+<div class="bg-surface-container rounded-xl p-5 flex flex-col gap-4 group hover:bg-surface-container-high transition-all duration-300">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded-lg bg-surface-container-highest overflow-hidden shrink-0">
+<img alt="Dr. Aris Thorne" class="w-full h-full object-cover" data-alt="A professional studio portrait of a friendly male dermatologist in a modern clinic. He is wearing a clean white coat over a muted sage green shirt, looking directly at the camera with a warm, confident smile. The background is softly blurred, showing a minimalist medical office with natural light and wooden accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-VmlWvZKW2kinFhqvsCpseNZcgCo6sZFE5woYtTbvvFIHhDUyzJVa1uwhf4LCyPQZ3nb-XMlK7xrGjZ5wMTaxHY9rAu1_VsZ31LwMRF-zxl6WFHw-wmhqadt9EiPRJtTzKobKMWSFAcxn1TC1j5zZlOgQA11_YjBSWig72uVxAPEueKn4cT1yEyyexO2eYu4g3vahahy5gsXd-VaI7TJovFq4nqct0HcG03nD9T3XSxwTKrF6ynipd7QL9RYwXJzHkiMAQMfAx-8"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-bold text-on-surface text-lg">Dr. Aris Thorne</h4>
+<p class="text-on-surface-variant text-sm font-medium">0.8 miles away</p>
+</div>
+<div class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Available Today</div>
+</div>
+<div class="flex items-center mt-2 gap-1">
+<span class="material-symbols-outlined text-amber-500 text-lg stars-fill">star</span>
+<span class="text-sm font-bold">4.9</span>
+<span class="text-on-surface-variant text-xs ml-1">(124 reviews)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant/10 pt-4">
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-surface rounded-full text-[10px] font-medium text-on-surface-variant">General</span>
+<span class="px-3 py-1 bg-surface rounded-full text-[10px] font-medium text-on-surface-variant">Cosmetic</span>
+</div>
+<button class="bg-primary-container text-on-primary-container px-8 py-2 rounded-full font-bold text-sm hover:opacity-90 active:scale-98 transition-all">Book</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container rounded-xl p-5 flex flex-col gap-4 group hover:bg-surface-container-high transition-all duration-300">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded-lg bg-surface-container-highest overflow-hidden shrink-0">
+<img alt="Dr. Elena Rossi" class="w-full h-full object-cover" data-alt="A high-end editorial portrait of a female dermatologist with a calm and professional demeanor. She has elegant, natural styling and is positioned in a sunlit medical spa environment. The color palette features soft creams and warm tans, with a subtle hint of muted sage in the decor, reflecting a premium skincare brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKBAkNvNVAMePpT1qAcyiY0LJpYM7-EoiDpGhREuCVv79QV3tD6OEazK6zGL7vxshXqELRjpcp0iM8rp-rmHosgM9gC5CP0a09x-9bYTjmHUsGZqzH-aMaMyo96R-sT6y9M1S1DQk641LtlpZA4LFWFJ_YJDoqL10POpY58nIX84P7Smnl__K8flKWaCBToL3bh4I3WXLU6X3MwduckmSYxY1R_vhgSSmNiYHHnMzuHjLrCsZhmuXybQG0R-pnOxcd2CQQYYPXFDc"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-bold text-on-surface text-lg">Dr. Elena Rossi</h4>
+<p class="text-on-surface-variant text-sm font-medium">1.2 miles away</p>
+</div>
+<div class="bg-surface-container-highest text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">By Appointment</div>
+</div>
+<div class="flex items-center mt-2 gap-1">
+<span class="material-symbols-outlined text-amber-500 text-lg stars-fill">star</span>
+<span class="text-sm font-bold">4.8</span>
+<span class="text-on-surface-variant text-xs ml-1">(98 reviews)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant/10 pt-4">
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-surface rounded-full text-[10px] font-medium text-on-surface-variant">Pediatric</span>
+<span class="px-3 py-1 bg-surface rounded-full text-[10px] font-medium text-on-surface-variant">Surgical</span>
+</div>
+<button class="bg-primary-container text-on-primary-container px-8 py-2 rounded-full font-bold text-sm hover:opacity-90 active:scale-98 transition-all">Book</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container rounded-xl p-5 flex flex-col gap-4 group hover:bg-surface-container-high transition-all duration-300">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded-lg bg-surface-container-highest overflow-hidden shrink-0">
+<img alt="Dr. Julian Vane" class="w-full h-full object-cover" data-alt="A clean, minimalist portrait of a senior dermatologist. He exudes wisdom and care, captured in a bright, airy medical facility with soft linen curtains in the background. The lighting is diffused and natural, emphasizing a high-trust, expert-driven environment with a cohesive color palette of neutral grays and warm off-whites." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAm6VC0ur07f52Qckbla0bV-4PYYDwuEX4j-C2me6CY1qKXRrIcYmC14wriLMv7EnGkYOTFqd4p7s6E77N4ow-_xLt6V-6u5sqFiZmOr3RuQMjQVQuiv86vIBNIJG85v_u8bVtt5-1Ftk8YXC57MHLbEHGTFK2f7Y9sbwrUxDcoLEma2Rac2U0PVjUw2tAGvwQ99tzjx4NWVbbapRZgAtyHl43Acp3Y1wy3dd15TTyRAEiUqSigDafjfgoDNhxfEs0Tt0q_7ezI4z0"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-bold text-on-surface text-lg">Dr. Julian Vane</h4>
+<p class="text-on-surface-variant text-sm font-medium">2.5 miles away</p>
+</div>
+<div class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Available Today</div>
+</div>
+<div class="flex items-center mt-2 gap-1">
+<span class="material-symbols-outlined text-amber-500 text-lg stars-fill">star</span>
+<span class="text-sm font-bold">5.0</span>
+<span class="text-on-surface-variant text-xs ml-1">(210 reviews)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant/10 pt-4">
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-surface rounded-full text-[10px] font-medium text-on-surface-variant">Skin Cancer</span>
+<span class="px-3 py-1 bg-surface rounded-full text-[10px] font-medium text-on-surface-variant">Dermpath</span>
+</div>
+<button class="bg-primary-container text-on-primary-container px-8 py-2 rounded-full font-bold text-sm hover:opacity-90 active:scale-98 transition-all">Book</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface/70 dark:bg-surface/70 backdrop-blur-md shadow-[0_-8px_24px_rgba(28,28,24,0.06)] flex justify-around items-center w-full px-2 py-3 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label text-label-md mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined">center_focus_weak</span>
+<span class="font-label text-label-md mt-1">Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label text-label-md mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-fixed text-on-primary-container dark:text-on-primary-fixed rounded-full px-5 py-2 scale-98 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label text-label-md mt-1 font-bold">Learn</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-full transition-all duration-200" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label text-label-md mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

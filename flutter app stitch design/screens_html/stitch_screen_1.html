@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-error": "#ffffff",
+              "surface-bright": "#fcf9f2",
+              "secondary": "#6f5a51",
+              "surface-tint": "#5a6241",
+              "on-surface": "#1c1c18",
+              "on-error-container": "#93000a",
+              "on-primary-container": "#3b4325",
+              "tertiary": "#70566c",
+              "tertiary-fixed-dim": "#ddbdd6",
+              "outline": "#77786d",
+              "on-secondary-fixed": "#271811",
+              "on-primary-fixed-variant": "#424a2c",
+              "tertiary-fixed": "#fbd9f2",
+              "surface-variant": "#e5e2db",
+              "background": "#fcf9f2",
+              "primary-container": "#a7b08a",
+              "outline-variant": "#c7c7bb",
+              "on-surface-variant": "#46483e",
+              "on-secondary": "#ffffff",
+              "secondary-fixed-dim": "#ddc1b6",
+              "inverse-on-surface": "#f3f0e9",
+              "on-background": "#1c1c18",
+              "surface-container": "#f1eee7",
+              "inverse-primary": "#c2cba3",
+              "surface-container-high": "#ebe8e1",
+              "on-tertiary-container": "#50394d",
+              "on-tertiary-fixed": "#291527",
+              "on-primary": "#ffffff",
+              "primary": "#5a6241",
+              "surface-container-low": "#f6f3ec",
+              "error-container": "#ffdad6",
+              "inverse-surface": "#31312c",
+              "surface-container-lowest": "#ffffff",
+              "on-primary-fixed": "#171e05",
+              "on-secondary-fixed-variant": "#56423a",
+              "surface": "#fcf9f2",
+              "primary-fixed-dim": "#c2cba3",
+              "error": "#ba1a1a",
+              "tertiary-container": "#c2a3bb",
+              "on-tertiary-fixed-variant": "#573f53",
+              "surface-container-highest": "#e5e2db",
+              "secondary-fixed": "#fadcd1",
+              "secondary-container": "#fadcd1",
+              "surface-dim": "#dcdad3",
+              "primary-fixed": "#dee7be",
+              "on-secondary-container": "#756057",
+              "on-tertiary": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #fcf9f2;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24">
+<!-- TopAppBar -->
+<nav class="w-full top-0 sticky z-40 bg-[#fcf9f2] dark:bg-[#1c1c18] flex items-center justify-between px-6 py-4 w-full no-line tonal-shift bg-[#f1eee7] dark:bg-[#262620]">
+<div class="flex items-center gap-4">
+<button class="text-[#5a6241] dark:text-[#a7b08a] hover:opacity-80 transition-opacity scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] text-2xl font-semibold tracking-tight text-[#1c1c18] dark:text-[#fcf9f2]">Scan History</h1>
+</div>
+<button class="text-[#5a6241] dark:text-[#a7b08a] hover:opacity-80 transition-opacity scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</nav>
+<!-- Main Canvas -->
+<main class="px-6 pt-4 space-y-6">
+<!-- Search Section -->
+<section class="w-full">
+<div class="relative flex items-center group">
+<span class="absolute left-4 text-on-surface-variant material-symbols-outlined" data-icon="search">search</span>
+<input class="w-full bg-surface-container-lowest text-on-surface border-none rounded-full py-4 pl-12 pr-6 focus:ring-2 focus:ring-primary-container transition-all shadow-sm placeholder:text-on-surface-variant/50" placeholder="Search scans..." type="text"/>
+</div>
+</section>
+<!-- Filter Chips (Editorial Touch) -->
+<div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+<button class="px-6 py-2 bg-primary-container text-on-primary-container rounded-full text-sm font-bold tracking-wide transition-all active:scale-95">All Scans</button>
+<button class="px-6 py-2 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium transition-all active:scale-95">High Risk</button>
+<button class="px-6 py-2 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium transition-all active:scale-95">Follow-up</button>
+<button class="px-6 py-2 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium transition-all active:scale-95">Recent</button>
+</div>
+<!-- History List -->
+<div class="space-y-4">
+<!-- Card 1: High Risk -->
+<div class="bg-[#5B3A2A] rounded-lg p-4 flex items-center gap-4 shadow-lg hover:translate-y-[-2px] transition-transform">
+<div class="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="Macro medical photography of a skin lesion on fair skin with focused lighting and shallow depth of field" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAotuAhMsDLTKpdY7I841OQO7y99UabJ3GNC4jnm1L97769c0eBsnXZ2zdR0t4fUHfKT5a-vM3bsunUNecycEr85teK0YtI7sAUEwfJnII5abW7aHn1Q4j29lOwK_AQFpWvOwXXfUI2jTHnwlbNqdTEWy-fMjbLUr2FUsRl4F_RH020bwc6r0TdBwD9IrBVDwqZW1l7sF5gXq2XttZZflyl4Z8UsX7CDV1W3gClt526l38XIH2P3F6wdPuoTum3fhbnRoQZ06YPPXQ"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-start">
+<h3 class="text-white font-semibold text-lg truncate">Melanoma</h3>
+<span class="text-white/60 text-xs font-medium">Oct 12</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-white/80 text-sm">87% Match</span>
+<div class="px-2 py-0.5 bg-[#ba1a1a] text-white text-[10px] font-bold uppercase tracking-wider rounded-full">High Risk</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-white/40" data-icon="chevron_right">chevron_right</span>
+</div>
+<!-- Card 2: Low Risk -->
+<div class="bg-[#5B3A2A] rounded-lg p-4 flex items-center gap-4 shadow-lg hover:translate-y-[-2px] transition-transform">
+<div class="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="Close-up detailed scan of a common benign nevus on light skin texture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_uQTjd067rdvu2ZQI4q31xl_h6TJY4AYPRVhRf4y_EqJvMrQgb5sIiS4mzN9jiTOSCegO3rLQx4zJPTonGvW__on025gyjSdURwZcBlU5u8K0bi0mLh81vPAPXV6gxPX2cBVr5giTf8sVH-iETx-nyg6PtkM2GLawdv8CUX0c9h6VcPqXVwIeJFYSSSpjv-wJYy_wXCyY0ElIgA4tmr9jcIuwYYmWCIHkfpX6VEE4xxCSigtmx0o51Bf4eQuO7AVlwBH6FrFMJfE"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-start">
+<h3 class="text-white font-semibold text-lg truncate">Nevi</h3>
+<span class="text-white/60 text-xs font-medium">Oct 05</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-white/80 text-sm">94% Match</span>
+<div class="px-2 py-0.5 bg-[#5a6241] text-white text-[10px] font-bold uppercase tracking-wider rounded-full">Low Risk</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-white/40" data-icon="chevron_right">chevron_right</span>
+</div>
+<!-- Card 3: Moderate (Implicit/Custom) -->
+<div class="bg-[#5B3A2A] rounded-lg p-4 flex items-center gap-4 shadow-lg hover:translate-y-[-2px] transition-transform">
+<div class="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="Clinical dermatological image of a small skin pigmentation detail" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRL4Zlnce3k9VQUPD2motfSQF0H29YQWkMJj8Fbu2QhxdaUqlYP0AKrPgRe7RiPdDUuTC4e7jcFZZnmBU6cP8JoWyM4U4xhxAwELPlhz2MnDP7tnrfHuYzUQmXvIT4vremjxkHpE8euygIZjM4uTfkJs9T0iShmGycSfKMB1OOAMZygCQHFA_BW_r9nabi4kMF5e1LxKHB8gbDXZV9AA-FdQSiXpQi_jbHBhSQgA-PYdjujkjYy2MrZsFxg_JntMr1A9P8OU9jdoM"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-start">
+<h3 class="text-white font-semibold text-lg truncate">Basal Cell</h3>
+<span class="text-white/60 text-xs font-medium">Sep 28</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-white/80 text-sm">62% Match</span>
+<div class="px-2 py-0.5 bg-[#ba1a1a] text-white text-[10px] font-bold uppercase tracking-wider rounded-full">High Risk</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-white/40" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+<!-- Empty State (Hidden for preview, visible logic) -->
+<div class="hidden flex flex-col items-center justify-center py-20 text-center space-y-4">
+<div class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary scale-[2.5]" data-icon="eco">eco</span>
+</div>
+<div class="space-y-2">
+<p class="text-on-surface font-semibold text-lg">No scans yet.</p>
+<p class="text-on-surface-variant text-sm max-w-[200px]">Start your first scan to begin monitoring your skin health.</p>
+</div>
+<button class="bg-primary-container text-on-primary-container px-8 py-3 rounded-full font-bold transition-all active:scale-95 shadow-sm">
+                Start Scan
+            </button>
+</div>
+<!-- Monthly Breakdown Divider (Editorial) -->
+<div class="flex items-center gap-4 py-4">
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+<span class="text-on-surface-variant text-[10px] font-bold uppercase tracking-[0.2em]">September 2023</span>
+<div class="h-[1px] flex-grow bg-outline-variant/30"></div>
+</div>
+<!-- Card 4 -->
+<div class="bg-[#5B3A2A] rounded-lg p-4 flex items-center gap-4 shadow-lg opacity-80">
+<div class="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="Dermatology focus of healthy skin tissue with natural pore structure" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlNtWrK4xzrwXK9IBfb3B5WboPmtPkdjQ_TYOgYLaSSoeBMROTwdCmIoS8ZjN197NeyClpiiTURXzF6c4535G7C1nAtNzbSnjYfIfPOyg1pMVi4SHsiIFkiWIcvVrNRi3uxEhqXcSIsGxoTkfe1fza9rSGFhnsv_2w_ld8MUxjnsEok7tfmWb56_yXFPG83h06Yi0aYmbs_Lhk8erKpu8-48KGAUyIB0qr_yC2CHsHiQ4IdGia6eHCRJq4ZOC9U7u-LT8Oq9Kvv6M"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-start">
+<h3 class="text-white font-semibold text-lg truncate">Dermatofibroma</h3>
+<span class="text-white/60 text-xs font-medium">Sep 14</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-white/80 text-sm">91% Match</span>
+<div class="px-2 py-0.5 bg-[#5a6241] text-white text-[10px] font-bold uppercase tracking-wider rounded-full">Low Risk</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-white/40" data-icon="chevron_right">chevron_right</span>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-4 bg-[#2f1f18] z-50 rounded-t-[32px] shadow-[0_-8px_24px_rgba(28,28,24,0.06)]">
+<a class="flex flex-col items-center justify-center text-[#fcf9f2] opacity-60 px-5 py-2 hover:bg-[#a7b08a]/10 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] uppercase tracking-widest font-bold mt-1">Home</span>
+</a>
+<!-- Active State: History -->
+<a class="flex flex-col items-center justify-center bg-[#a7b08a] text-[#3b4325] rounded-full px-5 py-2 scale-98 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] uppercase tracking-widest font-bold mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#fcf9f2] opacity-60 px-5 py-2 hover:bg-[#a7b08a]/10 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="biotech">biotech</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] uppercase tracking-widest font-bold mt-1">Results</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#fcf9f2] opacity-60 px-5 py-2 hover:bg-[#a7b08a]/10 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] uppercase tracking-widest font-bold mt-1">Profile</span>
+</a>
+</nav>
+<!-- Contextual FAB (Suppressing as per mandate for focused history screen, but keeping ghost logic for design completeness if needed elsewhere) -->
+</body></html>

@@ -11,6 +11,9 @@ dependencies:
   flutter_riverpod: ^2.4.9
   google_fonts: ^6.1.0
   flutter_svg: ^2.0.9
+  camera: ^0.11.0
+  permission_handler: ^11.3.0
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
@@ -19,9 +22,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  fonts:
-    - family: Plus Jakarta Sans
-      fonts:
-        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
-        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
-          weight: 700
+  assets:
+    - assets/labels.txt

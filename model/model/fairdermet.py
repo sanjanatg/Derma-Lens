@@ -98,7 +98,7 @@ class FairDermNet(nn.Module):
     """
 
     BACKBONE = "mobilenetv3_large_100"
-    BACKBONE_OUT_CHANNELS = 960
+    BACKBONE_OUT_CHANNELS = 1280
 
     def __init__(
         self,
