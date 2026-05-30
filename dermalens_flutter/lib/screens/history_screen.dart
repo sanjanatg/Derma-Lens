@@ -63,12 +63,12 @@ class HistoryScreen extends ConsumerWidget {
               const SizedBox(height: 20),
 
               // ── STAT PILLS ────────────────────────────────────
-              Row(
+              const Row(
                 children: [
                   _StatPill(label: 'Total Scans', value: '12'),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   _StatPill(label: 'Malignant Flags', value: '2', danger: true),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   _StatPill(label: 'Benign Results', value: '10'),
                 ],
               ),

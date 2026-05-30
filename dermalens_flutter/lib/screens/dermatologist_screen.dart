@@ -139,7 +139,7 @@ class DermatologistScreen extends ConsumerWidget {
                           children: [
                             Container(
                               width: 50, height: 50,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: AppColors.primaryContainer,
                                 shape: BoxShape.circle,
                               ),

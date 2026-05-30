@@ -122,7 +122,7 @@ class AboutScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Expanded(
+                        const Expanded(
                           child: _FeatureTile(
                             icon: Icons.visibility_rounded,
                             label: 'Explain-\nable',
@@ -151,19 +151,19 @@ class AboutScreen extends ConsumerWidget {
                                 Theme.of(context).textTheme.labelMedium,
                           ),
                           const SizedBox(height: 18),
-                          _Step(
+                          const _Step(
                               num: '01',
                               title: 'Capture',
                               body:
                                   'Frame the skin lesion clearly in the scanning ring.'),
                           const SizedBox(height: 16),
-                          _Step(
+                          const _Step(
                               num: '02',
                               title: 'Analyse',
                               body:
                                   'Our model classifies across 9 dermoscopic categories.'),
                           const SizedBox(height: 16),
-                          _Step(
+                          const _Step(
                               num: '03',
                               title: 'Review',
                               body:
@@ -180,7 +180,7 @@ class AboutScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: AppColors.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border(
+                        border: const Border(
                           left: BorderSide(
                               color: AppColors.primaryContainer, width: 4),
                         ),

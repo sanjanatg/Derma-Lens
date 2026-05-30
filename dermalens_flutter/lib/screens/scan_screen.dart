@@ -484,11 +484,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen>
     }
     // Dark fallback viewfinder
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: RadialGradient(
           center: Alignment.center,
           radius: 0.9,
-          colors: [const Color(0xFF1a1a2e), Colors.black],
+          colors: [Color(0xFF1a1a2e), Colors.black],
         ),
       ),
       child: CustomPaint(painter: _GridPainter()),

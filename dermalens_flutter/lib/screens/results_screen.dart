@@ -22,9 +22,9 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     final result = ref.watch(analysisResultProvider);
 
     if (result == null) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.surface,
-        body: const Center(child: Text('No results available')),
+        body: Center(child: Text('No results available')),
       );
     }
 

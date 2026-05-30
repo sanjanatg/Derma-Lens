@@ -195,9 +195,9 @@ class _LesionGuideScreenState extends ConsumerState<LesionGuideScreen> {
                     initialChildSize: 0.5, minChildSize: 0.3, maxChildSize: 0.85,
                     builder: (_, controller) => Container(
                       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                       ),
                       child: ListView(
                         controller: controller,

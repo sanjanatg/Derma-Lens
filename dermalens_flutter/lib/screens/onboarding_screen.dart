@@ -53,7 +53,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                       Container(
                         width: 68,
                         height: 68,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.surfaceContainerHigh,
                           shape: BoxShape.circle,
                         ),

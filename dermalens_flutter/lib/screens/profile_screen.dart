@@ -57,7 +57,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const SizedBox(height: 28),
 
               // ── SETTINGS ROWS ────────────────────────────────────
-              _SectionLabel('Settings'),
+              const _SectionLabel('Settings'),
               const SizedBox(height: 10),
               Container(
                 decoration: BoxDecoration(
@@ -69,7 +69,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _SettingsRow(icon: Icons.notifications_rounded, label: 'Notifications',
                         trailing: Switch(
                           value: _notifications,
-                          activeColor: AppColors.sage,
+                          activeThumbColor: AppColors.sage,
                           onChanged: (v) => setState(() => _notifications = v),
                         )),
                     _Divider(),
@@ -87,28 +87,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onTap: () => ref.read(navigationProvider.notifier).state = AppScreen.dermatologist,
                     ),
                     _Divider(),
-                    _SettingsRow(icon: Icons.lock_rounded, label: 'Privacy & Data',
-                        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.outline)),
+                    const _SettingsRow(icon: Icons.lock_rounded, label: 'Privacy & Data',
+                        trailing: Icon(Icons.chevron_right_rounded, color: AppColors.outline)),
                     _Divider(),
-                    _SettingsRow(icon: Icons.language_rounded, label: 'Language',
-                        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.outline)),
+                    const _SettingsRow(icon: Icons.language_rounded, label: 'Language',
+                        trailing: Icon(Icons.chevron_right_rounded, color: AppColors.outline)),
                     _Divider(),
                     _SettingsRow(icon: Icons.dark_mode_rounded, label: 'Dark Mode',
                         trailing: Switch(
                           value: _darkMode,
-                          activeColor: AppColors.sage,
+                          activeThumbColor: AppColors.sage,
                           onChanged: (v) => setState(() => _darkMode = v),
                         )),
                     _Divider(),
-                    _SettingsRow(icon: Icons.help_rounded, label: 'Help & Support',
-                        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.outline)),
+                    const _SettingsRow(icon: Icons.help_rounded, label: 'Help & Support',
+                        trailing: Icon(Icons.chevron_right_rounded, color: AppColors.outline)),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
               // ── ABOUT SECTION ────────────────────────────────────
-              _SectionLabel('About DermaLens'),
+              const _SectionLabel('About DermaLens'),
               const SizedBox(height: 10),
               Container(
                 width: double.infinity,
