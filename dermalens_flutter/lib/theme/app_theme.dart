@@ -80,7 +80,7 @@ class AppTheme {
       error: AppColors.error,
       onError: AppColors.onPrimary,
       errorContainer: AppColors.errorContainer,
-      onErrorContainer: const Color(0xFF93000A),
+      onErrorContainer: Color(0xFF93000A),
       surface: AppColors.surface,
       onSurface: AppColors.onSurface,
       onSurfaceVariant: AppColors.onSurfaceVariant,

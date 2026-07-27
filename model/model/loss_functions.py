@@ -1,13 +1,13 @@
 """
-loss_functions.py — Multi-Task Fairness-Aware Loss for FairDermNet (9-class)
+loss_functions.py — Multi-Task Fairness-Aware Loss for FairDermNet (8-class)
 -----------------------------------------------------------------------------
 Total Loss = α × L_class + β × L_fitzpatrick + γ × L_fairness
 
-  L_class       = FocalCrossEntropy(logits [B,9], class_labels [B], class_weights [9])
+  L_class       = FocalCrossEntropy(logits [B,8], class_labels [B], class_weights [8])
   L_fitzpatrick = CrossEntropy(fitz_logits [B,6], skin_tone_labels [B])
   L_fairness    = max(Sensitivity_i) − min(Sensitivity_i)
                   across Fitzpatrick groups i ∈ {0,1,2,3,4,5}
-                  where Sensitivity = soft-TPR for malignant classes (0–4)
+                  where Sensitivity = soft-TPR for malignant classes (0–3)
 
 Hyperparameters:
   α = 1.0   (primary task weight)
@@ -15,8 +15,8 @@ Hyperparameters:
   γ = 0.25  (fairness regularisation weight)
 
 Notes:
-  - Malignant classes: indices 0–4 (MEL, BCC, SCC, AK, BOD)
-  - Benign classes:    indices 5–8 (NV, BKL, DF, VASC)
+  - Malignant classes: indices 0–3 (MEL, BCC, SCC, AK)
+  - Benign classes:    indices 4–7 (NV, BKL, DF, VASC)
   - L_fairness is computed as soft (differentiable) approximation.
   - When a batch has <2 skin tone groups, L_fairness = 0.
 """
@@ -34,7 +34,7 @@ import torch.nn.functional as F
 # Constants
 # ---------------------------------------------------------------------------
 
-N_MALIGNANT = 5   # class indices 0–4 are malignant
+N_MALIGNANT = 4   # class indices 0–3 are malignant (MEL, BCC, SCC, AK)
 
 
 # ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ def focal_loss(
     Reduces loss contribution from easy well-classified examples.
 
     Args:
-        logits: [B, C] raw logits (C = 9 for 9-class)
+        logits: [B, C] raw logits (C = 8 for 8-class)
         labels: [B] long tensor of class indices
         gamma:  focusing parameter (2.0 recommended)
         weight: [C] per-class weights (for class imbalance)
@@ -64,12 +64,12 @@ def focal_loss(
 
 
 # ---------------------------------------------------------------------------
-# Per-group sensitivity (soft, differentiable) — 9-class aware
+# Per-group sensitivity (soft, differentiable) — 8-class aware
 # ---------------------------------------------------------------------------
 
 def _soft_sensitivity_per_group(
-    risk_probs: torch.Tensor,    # [B, 9] softmax probs
-    class_labels: torch.Tensor,  # [B] class index 0–8
+    risk_probs: torch.Tensor,    # [B, 8] softmax probs
+    class_labels: torch.Tensor,  # [B] class index 0–7
     skin_tones: torch.Tensor,    # [B] 0–5 Fitzpatrick index
     num_tones: int = 6,
     n_malignant: int = N_MALIGNANT,
@@ -116,24 +116,24 @@ def _equalized_odds_gap(
 
 class FairnessAwareLoss(nn.Module):
     """
-    Multi-task fairness-aware loss for 9-class skin lesion classification.
+    Multi-task fairness-aware loss for 8-class skin lesion classification.
 
     Args:
         alpha (float):        Weight for primary class loss.
         beta (float):         Weight for Fitzpatrick auxiliary head loss.
         gamma (float):        Weight for fairness regularisation term.
         focal_gamma (float):  Focusing parameter (0 = vanilla CE).
-        class_weights:        [9] per-class weights. Pass result of
+        class_weights:        [8] per-class weights. Pass result of
                               compute_class_weights_from_counts().
         label_smoothing:      Label smoothing for CE loss.
-        num_classes (int):    Number of output classes (9).
+        num_classes (int):    Number of output classes (8).
         num_tones (int):      Number of Fitzpatrick skin tone groups (6).
 
     Usage:
         criterion = FairnessAwareLoss(
             alpha=1.0, beta=0.15, gamma=0.25,
             class_weights=weights.to(DEVICE),
-            num_classes=9,
+            num_classes=8,
         )
         loss, breakdown = criterion(risk_logits, fitz_logits, class_labels, tones)
         loss.backward()
@@ -147,7 +147,7 @@ class FairnessAwareLoss(nn.Module):
         focal_gamma: float = 2.0,
         class_weights: Optional[torch.Tensor] = None,
         label_smoothing: float = 0.1,
-        num_classes: int = 9,
+        num_classes: int = 8,
         num_tones: int = 6,
     ):
         super().__init__()
@@ -171,7 +171,7 @@ class FairnessAwareLoss(nn.Module):
         logits: torch.Tensor,   # [B, num_classes]
         labels: torch.Tensor,   # [B] class indices 0–8
     ) -> torch.Tensor:
-        """Focal CE + vanilla CE blend for class-imbalanced 9-class problem."""
+        """Focal CE + vanilla CE blend for class-imbalanced 8-class problem."""
         ce = F.cross_entropy(
             logits, labels,
             weight=self.class_weights,
@@ -210,9 +210,9 @@ class FairnessAwareLoss(nn.Module):
     # -----------------------------------------------------------------------
     def forward(
         self,
-        risk_logits: torch.Tensor,       # [B, 9]
+        risk_logits: torch.Tensor,       # [B, 8]
         fitz_logits: torch.Tensor,       # [B, 6]
-        class_labels: torch.Tensor,      # [B] — class index 0–8
+        class_labels: torch.Tensor,      # [B] — class index 0–7
         skin_tone_labels: torch.Tensor,  # [B] — 0–5 Fitzpatrick index
     ) -> tuple[torch.Tensor, Dict[str, float]]:
         """
@@ -250,11 +250,11 @@ class FairnessAwareLoss(nn.Module):
 
 def compute_class_weights(
     labels: torch.Tensor,
-    num_classes: int = 9,
+    num_classes: int = 8,
 ) -> torch.Tensor:
     """
     Compute inverse-frequency class weights from a label tensor.
-    For the 9-class model, prefer compute_class_weights_from_counts()
+    For the 8-class model, prefer compute_class_weights_from_counts()
     from class_taxonomy which uses actual per-class counts.
     """
     counts = torch.bincount(labels, minlength=num_classes).float()

@@ -1,12 +1,51 @@
+"""
+onnx_export.py — PyTorch → ONNX export for FairDermNet (8-class)
+=================================================================
+Exports the model in inference mode (eval, single-head output).
+The Fitzpatrick auxiliary branch is NOT traced — it is inactive in eval mode.
+"""
+
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Tuple
+
 import torch
 
 
-def export_to_onnx(model, output_path, input_size=(1, 3, 224, 224), opset_version=17):
+def export_to_onnx(
+    model: torch.nn.Module,
+    output_path: str | Path,
+    input_size: int | Tuple[int, int, int, int] = 224,
+    opset_version: int = 17,
+    simplify: bool = True,
+) -> Path:
+    """
+    Export FairDermNet to ONNX.
+
+    Args:
+        model:         FairDermNet instance (will be set to eval mode).
+        output_path:   Destination .onnx path.
+        input_size:    Either an int (square spatial size) or a full (N, C, H, W) tuple.
+        opset_version: ONNX opset (17 recommended for MobileNetV3 + GeMPooling).
+        simplify:      Run onnx-simplifier post-export if available.
+
+    Returns:
+        Path to the exported .onnx file.
+    """
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    dummy = torch.randn(*input_size)
+
     model.eval()
+
+    if isinstance(input_size, int):
+        shape = (1, 3, input_size, input_size)
+    else:
+        shape = tuple(input_size)
+
+    dummy = torch.randn(*shape)
+
+    print(f"[ONNX Export] Tracing model with input {shape} ...")
     torch.onnx.export(
         model,
         dummy,
@@ -14,6 +53,29 @@ def export_to_onnx(model, output_path, input_size=(1, 3, 224, 224), opset_versio
         opset_version=opset_version,
         input_names=["input"],
         output_names=["risk_logits"],
-        dynamic_axes={"input": {0: "batch"}, "risk_logits": {0: "batch"}},
+        dynamic_axes={
+            "input":       {0: "batch"},
+            "risk_logits": {0: "batch"},
+        },
+        do_constant_folding=True,
     )
+
+    size_mb = output.stat().st_size / 1e6
+    print(f"[ONNX Export] ✓ Saved → {output}  ({size_mb:.2f} MB)")
+
+    if simplify:
+        try:
+            import onnx
+            from onnxsim import simplify as onnx_simplify
+
+            model_onnx, ok = onnx_simplify(onnx.load(str(output)))
+            if ok:
+                onnx.save(model_onnx, str(output))
+                print("[ONNX Export] ✓ Simplified with onnxsim")
+            else:
+                print("[ONNX Export] ⚠ onnxsim returned check=False; keeping original.")
+        except ImportError:
+            print("[ONNX Export] ⚠ onnxsim not installed — skipping simplification.")
+            print("              pip install onnxsim")
+
     return output

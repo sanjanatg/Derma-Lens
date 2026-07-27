@@ -1,7 +1,8 @@
-Melanocytic Nevus
 Melanoma
-Benign Keratosis
 Basal Cell Carcinoma
+Squamous Cell Carcinoma
 Actinic Keratosis
-Vascular Lesion
+Melanocytic Nevi
+Benign Keratosis
 Dermatofibroma
+Vascular Lesion

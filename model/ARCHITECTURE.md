@@ -2,10 +2,10 @@
 
 ## Project Goal
 
-A fairness-aware, explainable deep learning pipeline for skin cancer risk assessment. The system classifies dermoscopic lesion images into 9 skin condition classes while maintaining equitable performance across all six Fitzpatrick skin tones (I–VI). The trained model is exported as a TFLite INT8 file for deployment in a Flutter mobile app.
+A fairness-aware, explainable deep learning pipeline for skin cancer risk assessment. The system classifies dermoscopic lesion images into **8 skin condition classes** while maintaining equitable performance across all six Fitzpatrick skin tones (I–VI). The trained model is exported as a TFLite INT8 file for deployment in a Flutter mobile app.
 
 Two primary design pillars:
-1. **Clinical accuracy** — ≥96% sensitivity for malignant lesion detection (classes 0–4).
+1. **Clinical accuracy** — ≥96% sensitivity for malignant lesion detection (classes 0–3).
 2. **Algorithmic fairness** — equalized odds gap <5% across Fitzpatrick skin tone groups.
 
 ---
@@ -24,7 +24,7 @@ model/                           ← project root (pip-installable as dermalens-
 │   ├── fairness_attention.py    ← FairnessAttentionModule
 │   ├── gem_pooling.py           ← Generalized Mean Pooling
 │   ├── loss_functions.py        ← multi-task fairness-aware loss
-│   └── class_taxonomy.py        ← 9-class label definitions & dataset mappings
+│   └── class_taxonomy.py        ← 8-class label definitions & dataset mappings
 │
 ├── preprocessing/
 │   ├── __init__.py
@@ -60,7 +60,7 @@ model/                           ← project root (pip-installable as dermalens-
 
 ---
 
-## The 9-Class Taxonomy
+## The 8-Class Taxonomy
 
 Defined in `model/class_taxonomy.py`:
 
@@ -69,14 +69,18 @@ Defined in `model/class_taxonomy.py`:
 | 0 | Melanoma | MEL | High (malignant) |
 | 1 | Basal Cell Carcinoma | BCC | High (malignant) |
 | 2 | Squamous Cell Carcinoma | SCC | High (malignant) |
-| 3 | Actinic Keratosis | AK | Medium |
-| 4 | Bowen's Disease | BOD | Medium |
-| 5 | Melanocytic Nevi | NV | Low (benign, dominant class) |
-| 6 | Benign Keratosis | BKL | Low (benign) |
-| 7 | Dermatofibroma | DF | Low (benign) |
-| 8 | Vascular Lesion | VASC | Low (benign) |
+| 3 | Actinic Keratosis | AK | Medium (malignant / pre-cancerous) |
+| 4 | Melanocytic Nevi | NV | Low (benign, dominant class) |
+| 5 | Benign Keratosis | BKL | Low (benign) |
+| 6 | Dermatofibroma | DF | Low (benign) |
+| 7 | Vascular Lesion | VASC | Low (benign) |
 
-Malignant = classes 0–4. Benign = classes 5–8.
+Malignant = classes 0–3. Benign = classes 4–7.
+
+> **Note on Bowen's Disease (BOD):** BOD was excluded from the final taxonomy
+> because it is absent from all four available datasets (HAM10000, ISIC2019,
+> PAD-UFES-20, DDI). The model trains on 8 classes. BOD can be added in a
+> future experiment using images sourced from the ISIC archive.
 
 ---
 
@@ -209,10 +213,10 @@ Training utilities:
 | 3 | Imports all project modules |
 | 4 | Dataset loading — `build_ham10000_df`, `build_isic2019_df`, `build_pad_ufes_df`, `build_ddi_df`; merges into `master_dataset.csv` |
 | 5 | `SkinLesionDataset` (PyTorch Dataset), train/val/test split, DataLoader creation; estimates missing skin tones via ITA° |
-| 6 | Model instantiation (9-class), class weight computation, `FairnessAwareLoss` setup, VRAM check |
+| 6 | Model instantiation (8-class), class weight computation, `FairnessAwareLoss` setup, VRAM check |
 | 7 | Full training loop: AMP, gradient accumulation, gradient clipping, EarlyStopping, ModelCheckpoint, per-epoch fairness gap logging |
 | 8 | Training curve plots: loss, balanced accuracy, overall accuracy, equalized odds gap |
-| 9 | Test set evaluation: 9-class classification report, confusion matrix, per-class accuracy bar chart, binary sensitivity/specificity |
+| 9 | Test set evaluation: 8-class classification report, confusion matrix, per-class accuracy bar chart, binary sensitivity/specificity |
 | 9b | DDI held-out fairness evaluation: per-FST-group sensitivity/specificity with expert-labelled skin tones |
 | 9c | Clinical threshold analysis: ROC curve, threshold sweep (0.20–0.75), confusion matrices at 0.50 vs optimal, saves `threshold_config.json` for Flutter |
 | 10 | Fairness bar charts — sensitivity & specificity per Fitzpatrick group I–VI |
@@ -266,7 +270,7 @@ AdamW + CosineAnnealing + AMP fp16 + gradient accumulation
     ↓
 EarlyStopping → best.pth (ModelCheckpoint)
     ↓
-Test evaluation: 9-class metrics + binary sensitivity/specificity
+Test evaluation: 8-class metrics + binary sensitivity/specificity
     ↓
 DDI held-out fairness evaluation (expert-labelled skin tones)
     ↓

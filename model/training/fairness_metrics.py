@@ -77,7 +77,7 @@ def compute_epoch_metrics(
     all_preds: torch.Tensor,   # [N, num_classes] logits or softmax
     all_labels: torch.Tensor,  # [N] integer class indices
     all_groups: torch.Tensor,  # [N] Fitzpatrick 0-5
-    num_classes: int = 9,
+    num_classes: int = 8,
 ) -> Dict[str, float]:
     """
     Compute per-epoch summary metrics:
@@ -137,13 +137,13 @@ def compute_fairness_metrics(
     all_preds: torch.Tensor,
     all_labels: torch.Tensor,
     all_groups: torch.Tensor,
-    num_classes: int = 9,
+    num_classes: int = 8,
 ) -> Dict:
     """
     Returns per-Fitzpatrick-group accuracy, sensitivity (malignant recall),
     and specificity, plus overall equalized odds gap.
     """
-    malignant_classes = {0, 1, 2}
+    malignant_classes = {0, 1, 2, 3}   # MEL, BCC, SCC, AK
     pred_cls = all_preds.argmax(dim=1)
 
     group_metrics = {}

@@ -85,7 +85,7 @@ class FairDermNet(nn.Module):
     Fairness-aware CNN for skin lesion classification.
 
     Args:
-        num_classes (int): Number of output classes (default 9 for DermaLens).
+        num_classes (int): Number of output classes (default 8 for DermaLens).
         num_skin_tones (int): Fitzpatrick classes 0–5 (default 6).
         pretrained (bool): Load ImageNet weights for backbone.
         gem_p (float): Initial GeM pooling exponent.
@@ -102,7 +102,7 @@ class FairDermNet(nn.Module):
 
     def __init__(
         self,
-        num_classes: int = 9,
+        num_classes: int = 8,
         num_skin_tones: int = 6,
         pretrained: bool = True,
         gem_p: float = 3.0,

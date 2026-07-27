@@ -3,10 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/navigation_provider.dart';
 import '../theme/app_theme.dart';
-import 'home_screen.dart';
-import 'history_screen.dart';
-import 'lesion_guide_screen.dart';
-import 'profile_screen.dart';
 
 /// Wraps the 4 bottom-nav screens with the shared nav bar.
 class AppShell extends ConsumerWidget {
