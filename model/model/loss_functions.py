@@ -188,9 +188,20 @@ class FairnessAwareLoss(nn.Module):
     def compute_fitzpatrick_loss(
         self,
         fitz_logits: torch.Tensor,  # [B, 6]
-        fitz_labels: torch.Tensor,  # [B]
+        fitz_labels: torch.Tensor,  # [B] — 0–5 Fitzpatrick index, -1 = unknown
     ) -> torch.Tensor:
-        return F.cross_entropy(fitz_logits, fitz_labels)
+        """
+        Cross-entropy over the Fitzpatrick auxiliary head, computed only on
+        samples with a valid tone label (0–5). Samples with skin_tone = -1
+        (unknown — no surrounding skin pixels) are masked out instead of being
+        silently bucketed into a fabricated class. Previously the dataset
+        clamped unknown tones to 2, collapsing ~96% of training rows into
+        Fitzpatrick III and starving the aux head + fairness term of signal.
+        """
+        valid = fitz_labels >= 0
+        if not valid.any():
+            return torch.tensor(0.0, device=fitz_logits.device)
+        return F.cross_entropy(fitz_logits[valid], fitz_labels[valid])
 
     # -----------------------------------------------------------------------
     def compute_fairness_loss(

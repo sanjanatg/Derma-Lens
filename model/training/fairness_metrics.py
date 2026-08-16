@@ -28,15 +28,18 @@ def group_sensitivity(
     pred_cls = preds.argmax(dim=1)
     out = {}
     for g in torch.unique(groups):
+        g_int = int(g.item())
+        if g_int < 0:   # unknown tone (-1) — excluded from fairness metrics
+            continue
         m = groups == g
         y_true = labels[m]
         y_pred = pred_cls[m]
         positives = (y_true == positive_class).sum().float()
         if positives.item() == 0:
-            out[int(g.item())] = 0.0
+            out[g_int] = 0.0
             continue
         tp = ((y_true == positive_class) & (y_pred == positive_class)).sum().float()
-        out[int(g.item())] = float(tp / (positives + 1e-8))
+        out[g_int] = float(tp / (positives + 1e-8))
     return out
 
 
@@ -52,6 +55,9 @@ def demographic_parity_gap(preds, groups, positive_class: int = 1) -> float:
     pred_cls = preds.argmax(dim=1)
     rates = []
     for g in torch.unique(groups):
+        g_int = int(g.item())
+        if g_int < 0:   # unknown tone (-1) — excluded
+            continue
         m = groups == g
         rate = (pred_cls[m] == positive_class).float().mean().item()
         rates.append(rate)
@@ -149,6 +155,8 @@ def compute_fairness_metrics(
     group_metrics = {}
     for g in torch.unique(all_groups):
         g_int = int(g.item())
+        if g_int < 0:   # unknown tone (-1) — excluded from fairness breakdown
+            continue
         mask = all_groups == g
 
         y_true = all_labels[mask]

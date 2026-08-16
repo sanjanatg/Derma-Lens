@@ -143,7 +143,7 @@ Four public datasets are merged into a unified `master_dataset.csv` (`image_path
 | PAD-UFES-20 (~2.3k, smartphone photos) | Training / domain adaptation |
 | DDI / Stanford (~656) | **Held-out fairness evaluation only** (expert-labelled Fitzpatrick tones) |
 
-HAM10000 and ISIC 2019 lack Fitzpatrick labels, so skin tone is **estimated automatically** via the ITA° formula (`preprocessing/skin_tone_estimation.py`) and cached in `tone_cache_*.csv`.
+HAM10000 and ISIC 2019 lack Fitzpatrick labels, so skin tone is **estimated automatically** via the ITA° formula (`preprocessing/skin_tone_estimation.py`, lesion mask + surrounding-skin pixels) and cached in the `skin_tone` column of `master_dataset.csv`. Un-estimable rows (no surrounding skin pixels) are kept as `-1` and **masked out** of the Fitzpatrick auxiliary loss and the fairness term — never silently defaulted to a class (an earlier version clamped unknowns to 2, collapsing ~96% of training rows into Fitzpatrick III and starving the fairness signal).
 
 ---
 
