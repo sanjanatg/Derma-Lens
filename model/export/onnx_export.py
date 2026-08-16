@@ -17,7 +17,7 @@ def export_to_onnx(
     model: torch.nn.Module,
     output_path: str | Path,
     input_size: int | Tuple[int, int, int, int] = 224,
-    opset_version: int = 17,
+    opset_version: int = 11,
     simplify: bool = True,
 ) -> Path:
     """
@@ -27,7 +27,12 @@ def export_to_onnx(
         model:         FairDermNet instance (will be set to eval mode).
         output_path:   Destination .onnx path.
         input_size:    Either an int (square spatial size) or a full (N, C, H, W) tuple.
-        opset_version: ONNX opset (17 recommended for MobileNetV3 + GeMPooling).
+        opset_version: ONNX opset. Pinned to 11 for onnx-tf compatibility:
+                       onnx-tf 1.10.0 dispatches each op to a handler whose version
+                       equals the model opset, and only implements Squeeze/Unsqueeze
+                       (axes-as-attribute) and ReduceMean v11+ up to opset 11. At
+                       opset 11 torch also auto-decomposes HardSwish (opset 14+
+                       only), which onnx-tf has no handler for.
         simplify:      Run onnx-simplifier post-export if available.
 
     Returns:
@@ -58,6 +63,9 @@ def export_to_onnx(
             "risk_logits": {0: "batch"},
         },
         do_constant_folding=True,
+        # Use the legacy TorchScript exporter: the default dynamo exporter in
+        # torch 2.13 refuses opsets < 18, but onnx-tf needs opset 11 (see above).
+        dynamo=False,
     )
 
     size_mb = output.stat().st_size / 1e6

@@ -11,16 +11,36 @@
     "Dermatofibroma",
     "Vascular Lesion"
   ],
-  "malignant_indices": [0, 1, 2, 3],
-  "benign_indices": [4, 5, 6, 7],
-  "clinical_threshold": 0.5,
-  "_status": "placeholder",
-  "_warning": "clinical_threshold is not yet calibrated. Run Cell 9c in the training notebook and update this file before clinical use.",
-  "input_size": [224, 224, 3],
+  "malignant_indices": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "benign_indices": [
+    4,
+    5,
+    6,
+    7
+  ],
+  "clinical_threshold": 0.24,
+  "input_size": [
+    224,
+    224,
+    3
+  ],
   "normalization": {
-    "mean": [0.485, 0.456, 0.406],
-    "std": [0.229, 0.224, 0.225]
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
   },
-  "tflite_size_mb": null,
-  "benchmark_mean_ms": null
+  "tflite_size_mb": 5.513,
+  "benchmark_mean_ms": 2502.5
 }

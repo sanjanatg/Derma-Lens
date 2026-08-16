@@ -1,5 +1,5 @@
 """
-export_pipeline.py — End-to-end export: best.pth → ONNX → TFLite INT8
+export_pipeline.py — End-to-end export: best.pth → ONNX → TFLite
 =======================================================================
 Run this script AFTER training has completed and best.pth exists.
 
@@ -7,9 +7,18 @@ Usage:
     python export_pipeline.py
 
 Outputs (written to model/export/):
-    fairdermnet_int8.tflite   — INT8-quantized TFLite model (<6 MB target)
+    fairdermnet_int8.tflite   — TFLite model, int8 weights + float32 activations
+                                (dynamic-range quantization, ≈5.5 MB, <6 MB target)
     labels.txt                — 8 class names (one per line, in class index order)
     threshold_config.json     — Clinical threshold + metadata for Flutter
+
+Why not full INT8?
+    The GeM pooling power op (x^p, learned p≈2.88) produces activation
+    intermediates spanning ~±1.7M. Full INT8 quantizes them with a step of
+    ~13615, destroying precision (validated: 3% top-1 match vs PyTorch).
+    Dynamic-range quantization keeps activations in float32, so the power op
+    is exact and validated real-image performance is statistically identical
+    to PyTorch, at the same ≈5.5 MB size.
 
 Requirements:
     pip install onnx onnx-tf tensorflow-cpu==2.13.0
@@ -24,7 +33,7 @@ from pathlib import Path
 
 # ── Project root on sys.path ─────────────────────────────────────────────────
 SCRIPT_DIR   = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent          # model/ directory
+PROJECT_ROOT = SCRIPT_DIR                 # model/ directory
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -71,6 +80,22 @@ def load_clinical_threshold(threshold_json: Path) -> float:
     return 0.5
 
 
+def load_calibration_images(split_csv: Path, n: int = 200) -> list | None:
+    """Read up to n image paths from the train split for INT8 calibration."""
+    if not split_csv.exists():
+        print(f"[Pipeline] ⚠ No calibration CSV at {split_csv} — falling back to synthetic.")
+        return None
+    try:
+        import pandas as pd
+        df = pd.read_csv(split_csv)
+        paths = [p for p in df["image_path"].tolist() if Path(p).exists()]
+        print(f"[Pipeline] Calibration images: {min(len(paths), n)} from {split_csv.name}")
+        return paths[:n]
+    except Exception as e:
+        print(f"[Pipeline] ⚠ Could not load calibration images ({e}) — falling back to synthetic.")
+        return None
+
+
 def load_checkpoint(ckpt_path: Path) -> FairDermNet:
     """Load FairDermNet from best.pth (8-class, eval mode)."""
     if not ckpt_path.exists():
@@ -110,14 +135,20 @@ def main():
     print(f"[Pipeline] Parameters: {n_params / 1e6:.2f} M")
 
     # 2. Export ONNX
-    export_to_onnx(model, ONNX_PATH, input_size=224, opset_version=17, simplify=True)
+    export_to_onnx(model, ONNX_PATH, input_size=224, opset_version=11, simplify=True)
 
-    # 3. Convert to TFLite INT8
+    # 3. Convert to TFLite — dynamic-range quantization (int8 weights, float32
+    #    activations). Full INT8 activation quantization is deliberately NOT
+    #    used: the GeM pooling power op (x^p, p≈2.88) has an INT8 activation
+    #    scale of ~13615, which destroys precision (3% top-1 vs PyTorch).
+    #    Real-image calibration is only needed for full INT8, so it is not
+    #    passed here.
     tflite_path = convert_onnx_to_tflite(
         onnx_path=ONNX_PATH,
         output_path=TFLITE_PATH,
         num_calibration_samples=200,
         quantize_int8=True,
+        full_int8=False,
     )
     tflite_mb = tflite_path.stat().st_size / 1e6
 

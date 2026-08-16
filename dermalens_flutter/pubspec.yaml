@@ -14,7 +14,7 @@ dependencies:
   camera: ^0.11.0
   permission_handler: ^11.3.0
   shared_preferences: ^2.5.5
-  tflite_flutter: ^0.10.4   # Real on-device inference via TFLite C API
+  tflite_flutter: ^0.11.0   # Real on-device inference via TFLite C API (0.10.x breaks on Dart ≥3.4: UnmodifiableUint8ListView removed)
   image: ^4.1.7             # Pixel-level image decode/resize for preprocessing
 
 dev_dependencies:
