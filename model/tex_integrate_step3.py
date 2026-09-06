@@ -106,6 +106,13 @@ def collect_values():
             vig_by[r["cohort"]] = vig_by.get(r["cohort"], 0) + 1
     mw3d = {t["comparison"]: t for t in rep3d["mw_tests"]}
 
+    # artifact census from the authors' unblinded key (generated, not typed)
+    akey = load_csv("blind_review_authors_key.csv")
+    n_rul = sum(1 for r in akey
+                if r["artifact"] == "Ruler or paper card in frame")
+    n_ink = sum(1 for r in akey
+                if r["artifact"] == "Surgical ink / pen markings")
+
     # Step 2 threshold-equalization results (the experiment behind the claim)
     rep2 = json.loads((AUDIT / "audit_step2_report.json").read_text())
     erA, erB, erC = rep2["eval_results"]
@@ -210,6 +217,8 @@ def collect_values():
         "p_hot": f"{mw3d['hot_lum fp_DDI vs true_AK']['p']:.2f}",
         "n_vig_mel": str(vig_by.get("true_MEL", 0)),
         "n_vig_fp": str(vig_by.get("fp_DDI_AK", 0)),
+        "n_rul": str(n_rul),
+        "n_ink": str(n_ink),
     }
     v.update(v2)
     return v
@@ -243,6 +252,12 @@ Eval-half outcomes: at the shipped threshold (A), sensitivity is
 [{eoAlo}, {eoAhi}] -- already below the 5\\% target at the point estimate,
 but only because specificity is negligible in every group (overall
 {specA}); there is no sensitivity gap left to close at this operating point.
+This is the same operating point at which Section~\\ref{{sec:defect1}}
+reports the full-panel EO gap of 25.96\\%: the near-perfect sensitivity and
+the wide gap are two readings of one fact -- malignant scores in every tone
+group sit almost always above threshold on DDI -- and the narrowness of that
+margin is exactly what re-tuning cannot exploit without collapsing
+sensitivity.
 Re-tuning cannot buy specificity instead: uniform re-tuning (B) yields
 overall specificity {specB}, and the per-group config (C) reaches only
 {specC} overall -- its V--VI specificity of {specC4}
@@ -281,7 +296,9 @@ positives have AK as their top contributor (per-image AK probability
 0.91--0.97). The same column is nearly silent on benign in-domain images
 (mean {ak_test_ben} on the test panel) -- an order-of-magnitude shift
 (one-sided KS $={ks_ak}$, $p={p_ak}$) -- while contributing normally on true
-in-domain malignancies (mean {ak_test_mal}).Grad-CAM analysis~\\cite{{selvaraju2017}} with matched comparators bounds what
+in-domain malignancies (mean {ak_test_mal}).
+
+Grad-CAM analysis~\\cite{{selvaraju2017}} with matched comparators bounds what
 attention maps can establish. The AK head's activation is diffuse \\emph{{in both settings}}
 (median top-1\\% CAM mass share {cam_fp} on DDI false positives vs {cam_ak} on
 true AK cases; Mann--Whitney $p={p_mw}$), so diffuseness is a property of the
@@ -297,10 +314,12 @@ fifteen, reviewed side-by-side in triads) then tested the capture-cue
 hypothesis directly. It supports the field-wide reading: on the false
 positives the activation spreads across the skin field and does \\emph{{not}}
 focal-lock onto salient non-lesion objects. Manual inspection found paper
-rulers in frame in 8/15 false-positive images (most images also carry
-surgical ink markings), yet neither attracts elevated CAM mass (edge-band
+rulers in frame in {n_rul}/15 false-positive images and surgical ink
+markings in {n_ink}/15, yet neither attracts elevated CAM mass (edge-band
 mass share {edge_fp} vs {edge_ak} on true AK, Mann--Whitney $p={p_edge}$;
-hot-pixel luminance ratio {hot_fp} vs {hot_ak}, $p={p_hot}$).Conversely, the in-
+hot-pixel luminance ratio {hot_fp} vs {hot_ak}, $p={p_hot}$).
+
+Conversely, the in-
 domain melanoma comparators are predominantly circular dermoscopic captures
 with black surrounds ({n_vig_mel} of 15 with corner/center luminance below
 0.75, vs {n_vig_fp} of 15 false positives) while the MEL head remains
@@ -408,6 +427,11 @@ def main():
         "an equalized-odds gap of 25.26\\%, are retired) --",
         "yielding -- under the current checkpoint (September 2026 artifact "
         "state; all 2026-08-15 figures are superseded and retired) --")
+
+    if "\\label{sec:defect1}" not in tex:
+        tex = tex.replace("\\section{Defect 1: Stale Binary Risk-Label Mapping}",
+                          "\\section{Defect 1: Stale Binary Risk-Label Mapping}"
+                          "\n\\label{sec:defect1}")
 
     # Related Work + citations for the datasets and methods already named
     rw = ("\\section{Related Work}\n"
