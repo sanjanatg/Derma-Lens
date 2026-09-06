@@ -351,7 +351,12 @@ def main():
         d = sorted((ROOT / "figures" / "gradcam_step3d").glob("*.png"))
         out.append((f"model/figures/gradcam_step3d/ ({len(d)} png)",
                     "Per-cohort contact sheets (original | overlay), "
-                    "stats-annotated."))
+                    "stats-annotated — REVIEW strips, not paper figures."))
+        for p in sorted((ROOT.parent / "ppt_files" / "figs").glob("fig_*.png")):
+            out.append((f"ppt_files/figs/{p.name}",
+                        "PAPER FIGURE, wired into the .tex via "
+                        "tex_integrate_step3.py; regenerate with "
+                        "model/make_paper_figures.py."))
         for p in sorted((ROOT / "figures").glob("*.png")):
             out.append((f"model/figures/{p.name}",
                         "LEGACY figure — provenance likely the superseded "

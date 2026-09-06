@@ -1,4 +1,4 @@
-# Paper fact sheet — verified against artifacts (2026-09-06T20:33:08)
+# Paper fact sheet — verified against artifacts (2026-09-06T21:44:53)
 
 Every number below was recomputed at file-generation time from `model/audit/preds_cache.npz`, the audit CSV/JSON reports, and `checkpoints/threshold_config.json`. Provenance column names the source artifact. Do not hand-edit numbers; regenerate instead.
 
@@ -134,7 +134,9 @@ Package: `blind_review_gradcam.html` (15 trials, balanced 8A/7B, seed 42), key i
 |---|---|
 | model/figures/gradcam_step3b/ (15 jpg) | Step 3b FP overlays, AK-column CAM (filenames carry row/group/prob). |
 | model/figures/gradcam_step3c/ (45 jpg) | Comparator triads: 15 fp_DDI_AK + 15 true_AK + 15 true_MEL. |
-| model/figures/gradcam_step3d/ (3 png) | Per-cohort contact sheets (original | overlay), stats-annotated. |
+| model/figures/gradcam_step3d/ (3 png) | Per-cohort contact sheets (original | overlay), stats-annotated — REVIEW strips, not paper figures. |
+| ppt_files/figs/fig_cam_grid.png | PAPER FIGURE, wired into the .tex via tex_integrate_step3.py; regenerate with model/make_paper_figures.py. |
+| ppt_files/figs/fig_roc_ceilings.png | PAPER FIGURE, wired into the .tex via tex_integrate_step3.py; regenerate with model/make_paper_figures.py. |
 | model/figures/confusion_matrix_9class.png | LEGACY figure — provenance likely the superseded 2026-08-15 run; regenerate before use (see §6.2). |
 | model/figures/ddi_fairness_evaluation.png | LEGACY figure — provenance likely the superseded 2026-08-15 run; regenerate before use (see §6.2). |
 | model/figures/fairness_by_skin_type.png | LEGACY figure — provenance likely the superseded 2026-08-15 run; regenerate before use (see §6.2). |

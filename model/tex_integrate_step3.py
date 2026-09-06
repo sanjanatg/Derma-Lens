@@ -281,7 +281,14 @@ Group & $n$ (pos/neg) & AUC [95\\% CI] & Sens@Spec$\\geq$0.6 & Sens@Spec$\\geq$0
 \\end{{tabular}}}}
 \\end{{table}}
 
-For FST~V--VI the 95\\% CI on AUC includes 0.5 (Table~\\ref{{tab:ceilings}}):
+\\begin{{figure}}[h]
+\\centering
+\\includegraphics[width=\\columnwidth]{{figs/fig_roc_ceilings.png}}
+\\caption{{Per-group ROC ceilings (malignant sensitivity at two specificity floors), with AUC and 95\\% CI annotated per group; same data as Table~\\ref{{tab:ceilings}}. FST~V--VI is statistically indistinguishable from chance at both floors.}}
+\\label{{fig:ceilings}}
+\\end{{figure}}
+
+For FST~V--VI the 95\\% CI on AUC includes 0.5 (Table~\\ref{{tab:ceilings}}, Figure~\\ref{{fig:ceilings}}):
 the malignant score carries \\emph{{no measurable benign/malignant ranking
 signal for dark-skin images}}. This formalizes the threshold-equalization
 negative result: the disparity lives in the score distributions, not in
@@ -310,7 +317,8 @@ distinguishes the spurious response; the evidence for spuriousness is the
 score-level distribution shift above together with its tone-invariance below.
 
 A structured visual review of all forty-five overlays (three cohorts of
-fifteen, reviewed side-by-side in triads) then tested the capture-cue
+fifteen, reviewed side-by-side in triads; Figure~\\ref{{fig:camgrid}})
+then tested the capture-cue
 hypothesis directly. It supports the field-wide reading: on the false
 positives the activation spreads across the skin field and does \\emph{{not}}
 focal-lock onto salient non-lesion objects. Manual inspection found paper
@@ -327,6 +335,13 @@ lesion-localized (edge-band share {edge_mel}). Capture artifacts are therefore p
 cohort as expected, but the activation is not localized on them: the
 artifact census is context for the domain-shift finding, not its cause,
 and the spuriousness claim rests on the score-level evidence.
+
+\\begin{{figure*}}[t]
+\\centering
+\\includegraphics[width=\\textwidth]{{figs/fig_cam_grid.png}}
+\\caption{{Grad-CAM overlays for the three cohorts (per-tile labels: rank, malignant probability). Row~1: the five false positives whose capture artifacts (paper rulers, surgical ink) are attested in the authors' artifact key -- five of the fifteen flagged cases, all showing the same field-wide activation. Rows~2--3: the five highest-scoring true-AK and true-melanoma comparators. Both AK cohorts activate field-wide; only melanoma is lesion-localized.}}
+\\label{{fig:camgrid}}
+\\end{{figure*}}
 
 \\subsection{{Domain Shift, Not Skin Tone, Drives the Artifact}}
 Within DDI, benign-image AK probability is nearly flat across tone groups and
