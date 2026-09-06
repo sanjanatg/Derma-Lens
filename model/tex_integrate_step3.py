@@ -45,6 +45,19 @@ def collect_values():
     shift = load_csv("step3_distribution_shift.csv")
     recal = load_csv("step3b_ak_recalibration.csv")
     cams = load_csv("step3c_cam_comparators.csv")
+    rep3e = json.loads((AUDIT / "audit_step3e_report.json").read_text())
+    cf = load_csv("step3e_counterfactual.csv")
+    cf_tests = rep3e["tests"]
+
+    # median helper spans BOTH comparator sets: step3c (true_AK clinical,
+    # true_MEL derm) and step3e (true_AK_derm, true_MEL_clinical)
+    cf_all = cams + cf
+
+    def cf_med(cohort, key):
+        vals = [float(r[key]) for r in cf_all if r["cohort"] == cohort
+                and np.isfinite(float(r[key]))]
+        return float(np.median(vals)) if vals else float("nan")
+
     rep3b = json.loads((AUDIT / "audit_step3b_report.json").read_text())
     rep3c = json.loads((AUDIT / "audit_step3c_report.json").read_text())
     rep3 = json.loads((AUDIT / "audit_step3_report.json").read_text())
@@ -219,6 +232,15 @@ def collect_values():
         "n_vig_fp": str(vig_by.get("fp_DDI_AK", 0)),
         "n_rul": str(n_rul),
         "n_ink": str(n_ink),
+        # Step 3e: capture-modality confound (audit_step3e_report.json)
+        "pct_mel_derm": f"{100 * rep3e['test_panel_mel_derm_frac']:.0f}",
+        "pct_ak_derm": f"{100 * rep3e['test_panel_ak_derm_frac']:.0f}",
+        "r_mel_clin": f"{cf_med('true_MEL_clinical', 'cam_lum_r'):+.2f}",
+        "ak_derm": f"{cf_med('true_AK_derm', 'conc_top1pct'):.3f}",
+        "ak_clin": f"{cf_med('true_AK', 'conc_top1pct'):.3f}",
+        "mel_derm": f"{cf_med('true_MEL', 'conc_top1pct'):.3f}",
+        "p_dermmel": tex_pow(cf_tests['conc_top1pct__derm_MEL_vs_derm_AK']['p']),
+        "p_akmod": tex_pow(cf_tests['conc_top1pct__within_AK_derm_vs_clin']['p']),
     }
     v.update(v2)
     return v
@@ -306,15 +328,19 @@ positives have AK as their top contributor (per-image AK probability
 in-domain malignancies (mean {ak_test_mal}).
 
 Grad-CAM analysis~\\cite{{selvaraju2017}} with matched comparators bounds what
-attention maps can establish. The AK head's activation is diffuse \\emph{{in both settings}}
-(median top-1\\% CAM mass share {cam_fp} on DDI false positives vs {cam_ak} on
-true AK cases; Mann--Whitney $p={p_mw}$), so diffuseness is a property of the
-head, not a signature of the spurious response. The AK map leans toward darker
-pixels in both settings (median CAM--luminance correlation ${r_fp}$ on false
-positives, ${r_ak}$ on true AK, vs ${r_mel}$ for the MEL column on true
-melanomas). We accordingly do \\emph{{not}} claim attention morphology
-distinguishes the spurious response; the evidence for spuriousness is the
-score-level distribution shift above together with its tone-invariance below.
+attention maps can establish. The AK head's activation is diffuse in both
+clinical-photo settings (median top-1\\% CAM mass share {cam_fp} on DDI false
+positives vs {cam_ak} on true AK cases; Mann--Whitney $p={p_mw}$), so the
+spurious response cannot be identified by diffuseness: at this modality the
+diffuse response is indistinguishable from the head's normal behavior. The AK
+map leans toward darker pixels in both clinical settings (median
+CAM--luminance correlation ${r_fp}$ on false positives, ${r_ak}$ on true AK).
+The remaining comparator -- the MEL column on true melanomas (${r_mel}$) --
+differs from the AK cohorts in capture modality as well as class: melanoma
+test images are almost all dermoscopic acquisitions ({pct_mel_derm}\\% of the
+test panel, vs {pct_ak_derm}\\% of AK), and a dermoscopic frame leaves little
+background for any CAM to spread onto, so no class-level localization claim
+is made from that comparison.
 
 A structured visual review of all forty-five overlays (three cohorts of
 fifteen, reviewed side-by-side in triads; Figure~\\ref{{fig:camgrid}})
@@ -330,8 +356,15 @@ hot-pixel luminance ratio {hot_fp} vs {hot_ak}, $p={p_hot}$).
 Conversely, the in-
 domain melanoma comparators are predominantly circular dermoscopic captures
 with black surrounds ({n_vig_mel} of 15 with corner/center luminance below
-0.75, vs {n_vig_fp} of 15 false positives) while the MEL head remains
-lesion-localized (edge-band share {edge_mel}). Capture artifacts are therefore present in the false-positive
+0.75, vs {n_vig_fp} of 15 false positives); their lesion-localized
+appearance is expected from dermoscopic framing and is not read as a
+class-level property. A modality-controlled replication crossed class with
+capture style directly: on dermoscopic images the AK column is if anything
+\\emph{{more}} top-concentrated than the MEL column (median top-1\\% mass
+{ak_derm} vs {mel_derm}, $p={p_dermmel}$), and within AK the concentration
+doubles from clinical to dermoscopic acquisitions ({ak_clin} to {ak_derm},
+$p={p_akmod}$) -- the concentration statistic tracks capture modality, not
+class. Capture artifacts are therefore present in the false-positive
 cohort as expected, but the activation is not localized on them: the
 artifact census is context for the domain-shift finding, not its cause,
 and the spuriousness claim rests on the score-level evidence.
@@ -339,7 +372,7 @@ and the spuriousness claim rests on the score-level evidence.
 \\begin{{figure*}}[t]
 \\centering
 \\includegraphics[width=\\textwidth]{{figs/fig_cam_grid.png}}
-\\caption{{Grad-CAM overlays for the three cohorts (per-tile labels: rank, malignant probability). Row~1: the five false positives whose capture artifacts (paper rulers, surgical ink) are attested in the authors' artifact key -- five of the fifteen flagged cases, all showing the same field-wide activation. Rows~2--3: the five highest-scoring true-AK and true-melanoma comparators. Both AK cohorts activate field-wide; only melanoma is lesion-localized.}}
+\\caption{{Grad-CAM overlays for the three cohorts (per-tile labels: rank, malignant probability). Row~1: the five false positives whose capture artifacts (paper rulers, surgical ink) are attested in the authors' artifact key -- five of the fifteen flagged cases, all showing the same field-wide activation. Rows~2--3: the five highest-scoring true-AK and true-melanoma comparators. Both AK cohorts activate field-wide; the melanoma comparators are dermoscopic acquisitions whose lesion-localized appearance partly reflects capture modality (modality-controlled analysis in the text).}}
 \\label{{fig:camgrid}}
 \\end{{figure*}}
 
@@ -415,14 +448,23 @@ def main():
                   "writing; retraining to convergence under corrected tone "
                   "supervision, and re-measuring the DDI fairness gap, is "
                   "ongoing work.")
-    add_lim = (" Two caveats attach to the Step~\\ref{sec:step3} analysis. "
-               "First, the AK head's preference for darker-than-scene pixels "
-               "(observed identically on true AK cases) is left as an open "
-               "question: it may reflect genuine clinical signal, since "
-               "actinic damage correlates with sun-exposure appearance, or a "
-               "confound with lesion-border shadowing; disentangling the two "
-               "requires pixel-level attribution beyond the scope of this "
-               "audit. Second, the visual overlay review was performed by the "
+    add_lim = (" Three caveats attach to the Step~\\ref{{sec:step3}} analysis. "
+               "First, capture modality is confounded with class in the "
+               "available data ({pct_mel_derm}\\% of test melanomas are "
+               "dermoscopic acquisitions vs {pct_ak_derm}\\% of AKs), so "
+               "attention morphology cannot be compared across classes "
+               "without a modality-matched design; the modality-controlled "
+               "replication indicates the concentration statistic tracks "
+               "capture modality, and no class-level morphological claim is "
+               "made. Second, the AK head's preference for darker-than-scene "
+               "pixels is left as an open question: the same lean appears in "
+               "the MEL column on clinical-photo melanomas (median "
+               "CAM--luminance correlation {r_mel_clin}, though those cases "
+               "are low-confidence), which argues against an "
+               "actinic-damage-specific explanation, but disentangling "
+               "illumination response from lesion-border shadowing requires "
+               "pixel-level attribution beyond the scope of this audit. "
+               "Third, the visual overlay review was performed by the "
                "authors rather than an independent dermatologist, so the "
                "ruler and artifact counts are manual tallies pending expert "
                "confirmation.")
@@ -538,8 +580,8 @@ def main():
     ]:
         if old in tex:
             tex = tex.replace(old, new)
-    if lim_anchor in tex and "pixel-level attribution" not in tex:
-        tex = tex.replace(lim_anchor, lim_anchor + add_lim)
+    if "pixel-level attribution" not in tex:
+        pass  # inserted below, after vals exist (add_lim is a template)
 
     disc_anchor = "\\subsection{Quantization Choice Is Architecture-Dependent}"
     add_disc = ("\\subsection{Domain Shift and the Limits of Post-Hoc Fairness "
@@ -556,11 +598,21 @@ def main():
     vals = collect_values()
     section = TEMPLATE.format(**vals)
     tex = tex.replace("\\section{Discussion}", section + "\n\\section{Discussion}")
+    add_lim_f = add_lim.format(**vals)
+    old_lim_re = re.compile(r" Two caveats attach to the Step~.*?expert "
+                            r"confirmation\.", re.DOTALL)
+    if old_lim_re.search(tex):        # upgrade the pre-3e two-caveat version
+        tex = old_lim_re.sub(lambda m: add_lim_f, tex, count=1)
+    elif lim_anchor in tex and "Three caveats" not in tex:
+        tex = tex.replace(lim_anchor, lim_anchor + add_lim_f)
 
-    # guard: no unfilled placeholders from the template
+    # guard: no unfilled placeholders from the template, no silent NaNs
     leftovers = [k for k in vals if f"{{{k}}}" in tex]
     if leftovers:
         raise SystemExit(f"unfilled placeholders remain: {leftovers}")
+    if re.search(r"\bnan\b", section, re.IGNORECASE):
+        raise SystemExit("NaN leaked into the generated section - a median "
+                         "looked up a cohort that does not exist")
 
     TEX.write_text(tex, encoding="utf-8")
     print(f"updated {TEX} ({len(tex.splitlines())} lines)")

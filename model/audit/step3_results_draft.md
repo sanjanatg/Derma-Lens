@@ -42,16 +42,20 @@ The same AK column is nearly silent on benign in-domain images: mean 0.046
 shift (one-sided KS = 0.77, p < 1e-200). Grad-CAM analysis with matched
 comparators (`audit_step3c.py`; overlays in `figures/gradcam_step3b/` and
 `figures/gradcam_step3c/`) bounds what attention maps can and cannot
-establish. The AK head's activation is **diffuse in both settings** — median
-top-1% CAM mass share 0.023 on the DDI false positives vs 0.019 on true AK
-cases (Mann–Whitney p = 0.12; true-MEL comparator 0.025) — so diffuseness is
-a property of the head, not a signature of the spurious response. The AK map
-also leans toward darker pixels in both settings (median CAM–luminance
-correlation −0.29 on DDI false positives, −0.21 on true AK, vs +0.11 for the
-MEL column on true melanomas). We accordingly do **not** claim attention-map
-morphology distinguishes the spurious DDI response from genuine AK detection:
-the evidence for spuriousness is the score-level distribution shift above,
-together with its tone-invariance (Section X.Y.3).
+establish. The AK head's activation is **equally diffuse in both
+clinical-photo settings** — median top-1% CAM mass share 0.023 on the DDI
+false positives vs 0.019 on true AK cases (Mann–Whitney p = 0.12) — so the
+spurious response cannot be identified by diffuseness: at this modality the
+diffuse response is indistinguishable from the head's normal behavior. The
+AK map also leans toward darker pixels in both clinical settings (median
+CAM–luminance correlation −0.29 on DDI false positives, −0.21 on true AK).
+The remaining comparator, the MEL column on true melanomas (+0.11), differs
+from the AK cohorts in capture modality as well as class (see Step 3e
+below), so no class-level localization claim is made from it. We
+accordingly do **not** claim attention-map morphology distinguishes the
+spurious DDI response from genuine AK detection: the evidence for
+spuriousness is the score-level distribution shift above, together with its
+tone-invariance (Section X.Y.3).
 
 **Structured visual review (Step 3d, completed).** All 45 overlays were
 reviewed side-by-side in triads (`review_gradcam_step3c.html`; placement
@@ -65,11 +69,30 @@ median 0.410 vs 0.377 on true AK, Mann–Whitney p = 0.28; hot-pixel luminance
 ratio 0.95 vs 0.96, p = 0.93). Conversely, the in-domain melanoma
 comparators carry prominent capture artifacts of their own (dermoscope
 surrounds with black corners in 13/15; 9/15 with corner/center luminance
-< 0.75, vs 1/15 false positives) while the MEL head remains lesion-localized
-(edge-band share 0.244). Capture artifacts are therefore *present* in the
+< 0.75, vs 1/15 false positives); their lesion-localized appearance is
+expected from dermoscopic framing and is not read as a class-level
+property. Capture artifacts are therefore *present* in the
 false-positive cohort as expected, but the activation is not localized on
 them: the artifact census is context for the domain-shift finding, not its
 cause, and the spuriousness claim rests on the score-level evidence.
+
+**Modality control (Step 3e, completed).** Review of the comparator grid
+showed the capture-modality confound explicitly: true-MEL comparators are
+dermoscopic acquisitions while both AK cohorts are clinical photos, and in
+the test panel melanoma is 99% derm-provenance (845/853) vs AK 62%
+(179/289; the original true-AK cohort is all-PAD clinical). A
+modality-controlled replication (`audit_step3e.py`; overlays in
+`figures/gradcam_step3e/`) crossed class with capture style: on
+dermoscopic images the AK column is if anything *more* top-concentrated
+than the MEL column (median top-1% mass 0.039 vs 0.025, MW p = 7×10⁻³),
+and within AK the concentration doubles from clinical to dermoscopic
+acquisitions (0.019 → 0.039, p = 5×10⁻⁶) — the concentration statistic
+tracks capture modality, not class. The load-bearing comparison for the
+spuriousness claim (FP-DDI-AK vs true-AK, p = 0.12) was clinical-vs-clinical
+throughout and is unaffected. Caveat: the clinical-MEL cell (n = 8, all
+PAD-UFES-20) consists of low-confidence cases (MEL prob 0.03–0.29), so the
+within-MEL modality contrast is selection-biased; the within-AK contrast
+(high-confidence in both strata) is the clean one.
 
 ### X.Y.3 Domain shift, not skin tone, drives the artifact
 
@@ -114,7 +137,12 @@ tone/capture augmentation), not score- or threshold-level correction.
 
 DDI's coarse tone buckets and panel size (48–74 positives per group) yield wide
 CIs; the test panel cannot support per-tone specificity for FST V (n = 3) or VI
-(n = 0); Grad-CAM mechanism claims are correlational by nature, and the visual
+(n = 0); capture modality is confounded with class in the available data
+(99% of test melanomas are dermoscopic vs 62% of AKs), so attention
+morphology cannot be compared across classes without a modality-matched
+design (Step 3e quantifies this and finds the concentration statistic
+tracks modality, not class); Grad-CAM mechanism claims are correlational by
+nature, and the visual
 overlay review was performed by the authors rather than an independent
 dermatologist, so the ruler/artifact counts are manual tallies pending expert
 confirmation; the AK-column decomposition reflects the model's learned
@@ -127,7 +155,12 @@ for the MEL column on true melanomas). Two explanations are compatible with
 current evidence: (i) a genuine (if crude) clinical signal — actinic damage
 correlates with sun-exposure appearance in the training distribution — or
 (ii) a confound with lesion-border darkness/shadowing unrelated to skin tone.
-Disentangling them requires pixel-level attribution and is explicitly left
+The Step 3e replication sharpens this: the MEL column on *clinical-photo*
+melanomas shows the same dark lean (median CAM–luminance correlation −0.60,
+though those n = 8 cases are low-confidence), which argues against an
+actinic-damage-specific explanation and suggests an illumination-response
+component shared across heads. Disentangling them requires pixel-level
+attribution and is explicitly left
 open; the darker-pixel observation should not be read as a bias claim about
 the model's behavior across skin tones.
 
@@ -151,4 +184,6 @@ the model's behavior across skin tones.
 `audit/audit_step3d_report.json`, `figures/gradcam_step3b/` (15 overlays),
 `figures/gradcam_step3c/` (45 comparator overlays),
 `figures/gradcam_step3d/` (per-cohort contact sheets),
+`step3e_modality_tags.csv`, `step3e_counterfactual.csv`,
+`audit/audit_step3e_report.json`, `figures/gradcam_step3e/` (23 overlays),
 `review_gradcam_step3c.html` (triad review page; base64-embedded).*

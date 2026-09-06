@@ -233,7 +233,33 @@ def main():
         f"(baseline) → {f(safety['AK-adj lam=0.8 (sens.)']['ak_recall_at_spec80'])} "
         "(λ=0.8). Test AUC 0.9240 → 0.9234 at λ*.")
     add()
-    add("### 1.7 CAM comparators + placement (Steps 3c/3d)")
+    add("### 1.7 CAM comparators + placement (Steps 3c/3d/3e)")
+    add()
+    rep3e = json.loads((AUDIT / "audit_step3e_report.json").read_text())
+    cf = pd.concat([pd.read_csv(AUDIT / "step3c_cam_comparators.csv"),
+                    pd.read_csv(AUDIT / "step3e_counterfactual.csv")],
+                   ignore_index=True)
+    cf_med = lambda c, k: float(cf[cf["cohort"] == c][k].median())
+    assert cf_med("true_MEL", "conc_top1pct") == cf_med("true_MEL", "conc_top1pct"), \
+        "cohort lookup failed - nan median"
+    t3e = rep3e["tests"]
+    add(f"**Capture-modality structure (Step 3e).** Test-panel melanoma is "
+        f"{100 * rep3e['test_panel_mel_derm_frac']:.0f}% derm-provenance vs "
+        f"AK {100 * rep3e['test_panel_ak_derm_frac']:.0f}%; the step3c "
+        "comparator cohorts were fully modality-confounded (true-MEL 15/15 "
+        "derm, true-AK 15/15 clinical, FP 15/15 clinical). Modality-matched "
+        "counterfactuals: derm-AK top-1% concentration "
+        f"{cf_med('true_AK_derm', 'conc_top1pct'):.3f} vs derm-MEL "
+        f"{cf_med('true_MEL', 'conc_top1pct'):.3f} "
+        f"(MW p = {t3e['conc_top1pct__derm_MEL_vs_derm_AK']['p']:.1e}) — "
+        "direction REVERSES vs the unmatched comparison; within-AK clinical "
+        f"to derm: {cf_med('true_AK', 'conc_top1pct'):.3f} → "
+        f"{cf_med('true_AK_derm', 'conc_top1pct'):.3f} "
+        f"(p = {t3e['conc_top1pct__within_AK_derm_vs_clin']['p']:.1e}). "
+        "Concentration tracks capture modality, not class; the FP-vs-true-AK "
+        "spuriousness comparison was clinical-vs-clinical and is unaffected. "
+        "Clinical-MEL cell (n = 8) is low-confidence (p 0.03–0.29), so the "
+        "within-MEL contrast is selection-biased.")
     add()
     add("| Stat | fp_DDI_AK | true_AK | true_MEL | p (FP vs true-AK) |")
     add("|---|---|---|---|---|")
@@ -291,7 +317,8 @@ def main():
         "visible capture artifacts (rulers, ink markings) or by skin tone "
         "itself, attention maps and within-dataset contrasts should show it. "
         "Matched-comparator Grad-CAM found the activation equally diffuse on "
-        "genuine AK cases, field-wide rather than focal on the artifacts "
+        "genuine AK cases at matched clinical modality, field-wide rather "
+        "than focal on the artifacts "
         "present in frame, and tone-invariant within the out-of-domain "
         "dataset — while an order-of-magnitude score shift versus in-domain "
         "images persists at matched tone. What remains is a representational "
@@ -352,6 +379,10 @@ def main():
         out.append((f"model/figures/gradcam_step3d/ ({len(d)} png)",
                     "Per-cohort contact sheets (original | overlay), "
                     "stats-annotated — REVIEW strips, not paper figures."))
+        e = sorted((ROOT / "figures" / "gradcam_step3e").glob("*.jpg"))
+        out.append((f"model/figures/gradcam_step3e/ ({len(e)} jpg)",
+                    "Modality-matched counterfactual overlays (derm-AK, "
+                    "clinical-MEL) from audit_step3e.py."))
         for p in sorted((ROOT.parent / "ppt_files" / "figs").glob("fig_*.png")):
             out.append((f"ppt_files/figs/{p.name}",
                         "PAPER FIGURE, wired into the .tex via "
@@ -390,6 +421,12 @@ def main():
     add("5. **The blinded review has not run yet.** The sentence 'visually "
         "indistinguishable' is pre-registered to flip if the reviewer hits "
         "≥12/15; do not let the draft harden before the answer lands.")
+    add("5b. **Capture modality is confounded with class** (Step 3e, "
+        "quantified): the true-MEL comparator cohort is dermoscopic while "
+        "both AK cohorts are clinical photos, and the concentration "
+        "statistic tracks modality, not class (direction reverses at "
+        "matched modality). The paper carries this as a limitation; do NOT "
+        "restore class-level 'AK diffuse / MEL focal' phrasing anywhere.")
     add("6. **Balanced accuracy 'not converged'** (67.8–73.7% across "
         "protocols): the paper already says retraining is ongoing — keep "
         "any final-performance claim tied to that caveat.")

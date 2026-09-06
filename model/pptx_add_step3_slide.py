@@ -47,7 +47,23 @@ def collect():
                         (shift["column"] == "AK")]["ks_stat"].iloc[0])
     p_mw = next(t for t in rep3c["mw_tests"]
                 if t["comparison"] == "fp_DDI_AK vs true_AK")["p"]
+    rep3e = json.loads((AUDIT / "audit_step3e_report.json").read_text())
+    cf = pd.concat([pd.read_csv(AUDIT / "step3c_cam_comparators.csv"),
+                    pd.read_csv(AUDIT / "step3e_counterfactual.csv")],
+                   ignore_index=True)
+    cf_med = lambda c, k: float(cf[cf["cohort"] == c][k].median())
+    t3e = rep3e["tests"]
+    import math
+
+    def tex_p(p):
+        e = int(math.floor(math.log10(p)))
+        return f"1e{e}"
     return {
+        "p_dermmel": tex_p(t3e["conc_top1pct__derm_MEL_vs_derm_AK"]["p"]),
+        "p_akmod": tex_p(t3e["conc_top1pct__within_AK_derm_vs_clin"]["p"]),
+        "ak_derm": f"{cf_med('true_AK_derm', 'conc_top1pct'):.3f}",
+        "ak_clin": f"{cf_med('true_AK', 'conc_top1pct'):.3f}",
+        "mel_derm": f"{cf_med('true_MEL', 'conc_top1pct'):.3f}",
         "auc_v": f"{auc('FST V-VI'):.3f}",
         "auc_all": f"{auc('ALL'):.3f}",
         "ak_share": f"{100 * float(share):.1f}",
@@ -62,19 +78,53 @@ def collect():
 
 
 def already_present(prs):
-    for slide in prs.slides:
+    """Return indices of ALL existing Step 3 slides (ticket lives in notes)."""
+    hits = []
+    for idx, slide in enumerate(prs.slides):
+        if slide.has_notes_slide and TICKET in \
+                slide.notes_slide.notes_text_frame.text:
+            hits.append(idx)
         for shape in slide.shapes:
             if shape.has_text_frame and TICKET in shape.text_frame.text:
-                return True
-    return False
+                if idx not in hits:
+                    hits.append(idx)
+    return hits
+
+
+def dedup_zip(path):
+    """Slide removal leaves an orphaned part name in the package; rewrite
+    keeping the LAST entry per name so no duplicate zip entries remain."""
+    import shutil
+    import warnings
+    import zipfile
+    tmp = str(path) + "_dedup"
+    with zipfile.ZipFile(path) as z:
+        info = z.infolist()
+        seen, keep = set(), []
+        for item in reversed(info):
+            if item.filename not in seen:
+                seen.add(item.filename)
+                keep.append(item)
+        keep.reverse()
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as out:
+            for item in keep:
+                out.writestr(item.filename, z.read(item.filename))
+    shutil.move(tmp, str(path))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        Presentation(str(path))   # round-trip: raises on any duplicate
 
 
 def main():
     v = collect()
     prs = Presentation(str(DECK))
-    if already_present(prs):
-        print("Step 3 slide already present - nothing to do.")
-        return
+    idx = already_present(prs)
+    if idx:
+        print(f"Step 3 slide present ({len(idx)}x) - replacing with "
+              "updated version.")
+        xml_slides = prs.slides._sldIdLst
+        for i in sorted(idx, reverse=True):
+            xml_slides.remove(list(xml_slides)[i])
     layout = prs.slide_layouts[5] if len(prs.slide_layouts) > 5 \
         else prs.slide_layouts[-1]
     slide = prs.slides.add_slide(layout)
@@ -130,11 +180,15 @@ def main():
         f"sensitivity; AK down-weighting (λ fit on tune half only) peaks at "
         f"λ*={v['lam']} with tune AUC {v['auc0']}→{v['aucL']} (+0.013) and "
         f"collapses beyond — the argmax migrates AK→BCC/MEL.", level=1)
-    add("CAM comparators bound the mechanism: diffuseness is the AK head's "
-        "normal behavior (FP 0.023 vs true-AK 0.019, MW p="
-        f"{v['p_mw']}); field-wide placement is near-identical (edge-band "
-        f"{v['edge_fp']} vs {v['edge_ak']}, p=0.28). Rulers/ink present in "
-        "8/15 FPs but attract no focal activation.", level=1)
+    add("CAM comparators bound the mechanism: at matched clinical modality "
+        "the FP response is indistinguishable from true AK (diffuseness "
+        f"0.023 vs 0.019, MW p={v['p_mw']}; edge-band {v['edge_fp']} vs "
+        f"{v['edge_ak']}, p=0.28) - rulers/ink in 8/15 FPs attract no "
+        "focal activation. Modality control (step3e): concentration tracks "
+        f"capture modality, not class - derm AK {v['ak_derm']} vs derm MEL "
+        f"{v['mel_derm']} (p={v['p_dermmel']}); AK doubles clinical-to-derm "
+        f"({v['ak_clin']} to {v['ak_derm']}, p={v['p_akmod']}). No "
+        "class-level morphology claim.", level=1)
     add("Conclusion: closing the gap requires in-domain training signal "
         "(capture-domain hard negatives + tone augmentation) — declared as "
         "future work, to be judged against the ROC ceilings.", bold=True)
@@ -150,6 +204,8 @@ def main():
         f"(model/audit/blind_review_protocol.md).")
 
     prs.save(str(DECK))
+    if idx:
+        dedup_zip(DECK)   # removal orphaned a part name; rewrite the package
     print(f"appended Step 3 slide to {DECK}")
 
 

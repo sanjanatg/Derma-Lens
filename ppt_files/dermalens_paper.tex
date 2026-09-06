@@ -107,6 +107,10 @@ With defects corrected, we recomputed the clinical operating threshold under a $
 
 
 
+
+
+
+
 %% === STEP3-SECTION (auto-generated from audit CSVs; do not hand-edit numbers) ===
 \section{Score-Level Analysis of the Out-of-Domain Failure}
 \label{sec:step3}
@@ -192,15 +196,19 @@ positives have AK as their top contributor (per-image AK probability
 in-domain malignancies (mean 0.163).
 
 Grad-CAM analysis~\cite{selvaraju2017} with matched comparators bounds what
-attention maps can establish. The AK head's activation is diffuse \emph{in both settings}
-(median top-1\% CAM mass share 0.023 on DDI false positives vs 0.019 on
-true AK cases; Mann--Whitney $p=0.11$), so diffuseness is a property of the
-head, not a signature of the spurious response. The AK map leans toward darker
-pixels in both settings (median CAM--luminance correlation $-0.29$ on false
-positives, $-0.21$ on true AK, vs $+0.11$ for the MEL column on true
-melanomas). We accordingly do \emph{not} claim attention morphology
-distinguishes the spurious response; the evidence for spuriousness is the
-score-level distribution shift above together with its tone-invariance below.
+attention maps can establish. The AK head's activation is diffuse in both
+clinical-photo settings (median top-1\% CAM mass share 0.023 on DDI false
+positives vs 0.019 on true AK cases; Mann--Whitney $p=0.11$), so the
+spurious response cannot be identified by diffuseness: at this modality the
+diffuse response is indistinguishable from the head's normal behavior. The AK
+map leans toward darker pixels in both clinical settings (median
+CAM--luminance correlation $-0.29$ on false positives, $-0.21$ on true AK).
+The remaining comparator -- the MEL column on true melanomas ($+0.11$) --
+differs from the AK cohorts in capture modality as well as class: melanoma
+test images are almost all dermoscopic acquisitions (99\% of the
+test panel, vs 62\% of AK), and a dermoscopic frame leaves little
+background for any CAM to spread onto, so no class-level localization claim
+is made from that comparison.
 
 A structured visual review of all forty-five overlays (three cohorts of
 fifteen, reviewed side-by-side in triads; Figure~\ref{fig:camgrid})
@@ -216,8 +224,15 @@ hot-pixel luminance ratio 0.95 vs 0.96, $p=0.93$).
 Conversely, the in-
 domain melanoma comparators are predominantly circular dermoscopic captures
 with black surrounds (9 of 15 with corner/center luminance below
-0.75, vs 1 of 15 false positives) while the MEL head remains
-lesion-localized (edge-band share 0.244). Capture artifacts are therefore present in the false-positive
+0.75, vs 1 of 15 false positives); their lesion-localized
+appearance is expected from dermoscopic framing and is not read as a
+class-level property. A modality-controlled replication crossed class with
+capture style directly: on dermoscopic images the AK column is if anything
+\emph{more} top-concentrated than the MEL column (median top-1\% mass
+0.039 vs 0.025, $p=1\times10^{-3}$), and within AK the concentration
+doubles from clinical to dermoscopic acquisitions (0.019 to 0.039,
+$p=1\times10^{-6}$) -- the concentration statistic tracks capture modality, not
+class. Capture artifacts are therefore present in the false-positive
 cohort as expected, but the activation is not localized on them: the
 artifact census is context for the domain-shift finding, not its cause,
 and the spuriousness claim rests on the score-level evidence.
@@ -225,7 +240,7 @@ and the spuriousness claim rests on the score-level evidence.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figs/fig_cam_grid.png}
-\caption{Grad-CAM overlays for the three cohorts (per-tile labels: rank, malignant probability). Row~1: the five false positives whose capture artifacts (paper rulers, surgical ink) are attested in the authors' artifact key -- five of the fifteen flagged cases, all showing the same field-wide activation. Rows~2--3: the five highest-scoring true-AK and true-melanoma comparators. Both AK cohorts activate field-wide; only melanoma is lesion-localized.}
+\caption{Grad-CAM overlays for the three cohorts (per-tile labels: rank, malignant probability). Row~1: the five false positives whose capture artifacts (paper rulers, surgical ink) are attested in the authors' artifact key -- five of the fifteen flagged cases, all showing the same field-wide activation. Rows~2--3: the five highest-scoring true-AK and true-melanoma comparators. Both AK cohorts activate field-wide; the melanoma comparators are dermoscopic acquisitions whose lesion-localized appearance partly reflects capture modality (modality-controlled analysis in the text).}
 \label{fig:camgrid}
 \end{figure*}
 
@@ -274,7 +289,7 @@ The DDI analysis (Section~\ref{sec:step3}) adds a fourth lesson: post-hoc repair
 GeM pooling's learned exponent is a known source of quantization sensitivity; our finding that it produces an activation scale roughly $10^{3}$-$10^{4}\times$ larger than typical convolutional layers offers a concrete diagnostic (per-tensor scale inspection) for detecting this class of failure before it reaches deployment, and dynamic-range quantization as a practical mitigation when full INT8 is required elsewhere in a pipeline.
 
 \subsection{Limitations}
-The post-correction tone distribution remains heavily skewed toward Types II--III (98.8\% of training data), reflecting the true composition of HAM10000/ISIC~2019 rather than a residual bug. We expect the equalized-odds gap to narrow with genuine supervision but not to close without additional dark-skin-tone training data; closing it fully is a data-acquisition problem, not a modeling one. Best validation balanced accuracy (67.8--73.7\% across evaluation protocols) had not converged at the time of writing; retraining to convergence under corrected tone supervision, and re-measuring the DDI fairness gap, is ongoing work. Two caveats attach to the Step~\ref{sec:step3} analysis. First, the AK head's preference for darker-than-scene pixels (observed identically on true AK cases) is left as an open question: it may reflect genuine clinical signal, since actinic damage correlates with sun-exposure appearance, or a confound with lesion-border shadowing; disentangling the two requires pixel-level attribution beyond the scope of this audit. Second, the visual overlay review was performed by the authors rather than an independent dermatologist, so the ruler and artifact counts are manual tallies pending expert confirmation.
+The post-correction tone distribution remains heavily skewed toward Types II--III (98.8\% of training data), reflecting the true composition of HAM10000/ISIC~2019 rather than a residual bug. We expect the equalized-odds gap to narrow with genuine supervision but not to close without additional dark-skin-tone training data; closing it fully is a data-acquisition problem, not a modeling one. Best validation balanced accuracy (67.8--73.7\% across evaluation protocols) had not converged at the time of writing; retraining to convergence under corrected tone supervision, and re-measuring the DDI fairness gap, is ongoing work. Three caveats attach to the Step~\ref{sec:step3} analysis. First, capture modality is confounded with class in the available data (99\% of test melanomas are dermoscopic acquisitions vs 62\% of AKs), so attention morphology cannot be compared across classes without a modality-matched design; the modality-controlled replication indicates the concentration statistic tracks capture modality, and no class-level morphological claim is made. Second, the AK head's preference for darker-than-scene pixels is left as an open question: the same lean appears in the MEL column on clinical-photo melanomas (median CAM--luminance correlation -0.60, though those cases are low-confidence), which argues against an actinic-damage-specific explanation, but disentangling illumination response from lesion-border shadowing requires pixel-level attribution beyond the scope of this audit. Third, the visual overlay review was performed by the authors rather than an independent dermatologist, so the ruler and artifact counts are manual tallies pending expert confirmation.
 
 \section{Conclusion}
 We identified and corrected three independent, silently-compounding defects in a fairness-aware skin lesion classifier: a stale binary-label mapping, fabricated skin-tone training supervision from a swallowed exception, and a catastrophic INT8 quantization failure caused by a learned GeM pooling exponent. Each defect was invisible to standard top-line accuracy monitoring. We provide a corrected, on-device-validated deployment (5.51~MB, clinically calibrated threshold 0.25) and argue that fairness-critical ML pipelines require explicit data-lineage and quantization-scale auditing, not just held-out accuracy, before deployment claims can be trusted.

@@ -1,4 +1,4 @@
-# Paper fact sheet — verified against artifacts (2026-09-06T21:44:53)
+# Paper fact sheet — verified against artifacts (2026-09-06T22:18:24)
 
 Every number below was recomputed at file-generation time from `model/audit/preds_cache.npz`, the audit CSV/JSON reports, and `checkpoints/threshold_config.json`. Provenance column names the source artifact. Do not hand-edit numbers; regenerate instead.
 
@@ -90,7 +90,9 @@ Split: tune 326 (85 mal) / eval 330 (86 mal). Thresholds fitted on tune only; ev
 
 In-domain safety: AK-class recall @≈80% spec 0.955 (baseline) → 0.444 (λ=0.8). Test AUC 0.9240 → 0.9234 at λ*.
 
-### 1.7 CAM comparators + placement (Steps 3c/3d)
+### 1.7 CAM comparators + placement (Steps 3c/3d/3e)
+
+**Capture-modality structure (Step 3e).** Test-panel melanoma is 99% derm-provenance vs AK 62%; the step3c comparator cohorts were fully modality-confounded (true-MEL 15/15 derm, true-AK 15/15 clinical, FP 15/15 clinical). Modality-matched counterfactuals: derm-AK top-1% concentration 0.039 vs derm-MEL 0.025 (MW p = 7.0e-03) — direction REVERSES vs the unmatched comparison; within-AK clinical to derm: 0.019 → 0.039 (p = 5.1e-06). Concentration tracks capture modality, not class; the FP-vs-true-AK spuriousness comparison was clinical-vs-clinical and is unaffected. Clinical-MEL cell (n = 8) is low-confidence (p 0.03–0.29), so the within-MEL contrast is selection-biased.
 
 | Stat | fp_DDI_AK | true_AK | true_MEL | p (FP vs true-AK) |
 |---|---|---|---|---|
@@ -108,7 +110,7 @@ Vignette flags (corner/center lum < 0.75): FP 1/15, true_AK 0/15, true_MEL 9/15 
 1. **Label provenance.** We suspected the fairness objective had been optimized against the wrong malignant-class definition, which would have explained the disparity as an artifact. Verification of the training code, the epoch logging, and the git history showed the training-time penalty always used the full four-class malignant definition; the wrong definition existed only in a dead reporting path. The reported gap is therefore a property of the model, not of a metric bug.
 2. **Threshold equalization.** If the gap were a threshold-placement problem, per-group decision thresholds fitted on a held-out tuning half should close it. Evaluated once on the untouched eval half against a uniformly re-tuned control, group-specific thresholds bought specificity only by giving up sensitivity in the same groups, leaving the gap unchanged within confidence intervals. The failure is in the score rankings, not where the threshold sits.
 3. **Single-column recalibration.** Decomposition showed one malignant sub-score (the actinic-keratosis head) carries most false-positive mass out of domain, so deflating that column should help if it alone were spurious. With the deflation strength and threshold fitted on the tuning half only, ranking improved marginally at best and degraded monotonically beyond the peak, while the remaining columns took over the false positives and aggressive deflation destroyed genuine in-domain AK detection. The shared representation, not one column, maps this capture domain onto malignancy.
-4. **Mechanism attribution.** If the response were triggered by visible capture artifacts (rulers, ink markings) or by skin tone itself, attention maps and within-dataset contrasts should show it. Matched-comparator Grad-CAM found the activation equally diffuse on genuine AK cases, field-wide rather than focal on the artifacts present in frame, and tone-invariant within the out-of-domain dataset — while an order-of-magnitude score shift versus in-domain images persists at matched tone. What remains is a representational domain gap that lands hardest on the tone group with the weakest underlying ranking signal.
+4. **Mechanism attribution.** If the response were triggered by visible capture artifacts (rulers, ink markings) or by skin tone itself, attention maps and within-dataset contrasts should show it. Matched-comparator Grad-CAM found the activation equally diffuse on genuine AK cases at matched clinical modality, field-wide rather than focal on the artifacts present in frame, and tone-invariant within the out-of-domain dataset — while an order-of-magnitude score shift versus in-domain images persists at matched tone. What remains is a representational domain gap that lands hardest on the tone group with the weakest underlying ranking signal.
 
 ## 3. Blinded expert review — NOT YET SCORED (package ready; scorer tested; awaiting reviewer answers)
 
@@ -135,6 +137,7 @@ Package: `blind_review_gradcam.html` (15 trials, balanced 8A/7B, seed 42), key i
 | model/figures/gradcam_step3b/ (15 jpg) | Step 3b FP overlays, AK-column CAM (filenames carry row/group/prob). |
 | model/figures/gradcam_step3c/ (45 jpg) | Comparator triads: 15 fp_DDI_AK + 15 true_AK + 15 true_MEL. |
 | model/figures/gradcam_step3d/ (3 png) | Per-cohort contact sheets (original | overlay), stats-annotated — REVIEW strips, not paper figures. |
+| model/figures/gradcam_step3e/ (23 jpg) | Modality-matched counterfactual overlays (derm-AK, clinical-MEL) from audit_step3e.py. |
 | ppt_files/figs/fig_cam_grid.png | PAPER FIGURE, wired into the .tex via tex_integrate_step3.py; regenerate with model/make_paper_figures.py. |
 | ppt_files/figs/fig_roc_ceilings.png | PAPER FIGURE, wired into the .tex via tex_integrate_step3.py; regenerate with model/make_paper_figures.py. |
 | model/figures/confusion_matrix_9class.png | LEGACY figure — provenance likely the superseded 2026-08-15 run; regenerate before use (see §6.2). |
@@ -155,9 +158,10 @@ Package: `blind_review_gradcam.html` (15 trials, balanced 8A/7B, seed 42), key i
 3. **The 25.96% EO gap has CI [12.67%, 41.80%]** — wide, because only 171 malignant DDI images exist. Always quote with the CI; the point estimate alone overstates precision.
 4. **Step 2/3b eval-half specificities sit at 0.0–0.09** with wide CIs; any 'specificity unchanged' statement must carry its interval.
 5. **The blinded review has not run yet.** The sentence 'visually indistinguishable' is pre-registered to flip if the reviewer hits ≥12/15; do not let the draft harden before the answer lands.
+5b. **Capture modality is confounded with class** (Step 3e, quantified): the true-MEL comparator cohort is dermoscopic while both AK cohorts are clinical photos, and the concentration statistic tracks modality, not class (direction reverses at matched modality). The paper carries this as a limitation; do NOT restore class-level 'AK diffuse / MEL focal' phrasing anywhere.
 6. **Balanced accuracy 'not converged'** (67.8–73.7% across protocols): the paper already says retraining is ongoing — keep any final-performance claim tied to that caveat.
 7. **Two different bases for AK shares**: 63.3% top-contributor is full-panel benign DDI; the whack-a-mole migration shares are eval-half benign only. Never mix them in one sentence.
 8. **`files_claude/` dump files and the SUPERSEDED log** are retired; nothing in them may be quoted (the audit now fails the build if the old filename reappears).
 9. **RESOLVED cross-check:** `threshold_config.json` (sens 0.9603, spec 0.5543) matches the audited cache at the same operating point within 0.1 pp (fresh: 0.9593 / 0.5552); the paper's "96.0% / 55.4%" figures are safe to quote. An apparent specificity discrepancy was a bug in an early draft of this fact sheet's own computation, not in the config.
 
-*Generated by emit_factsheet_numbers.py in 0.4s.*
+*Generated by emit_factsheet_numbers.py in 1.2s.*
