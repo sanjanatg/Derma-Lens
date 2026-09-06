@@ -1,0 +1,16 @@
+C:\Users\sanja\AppData\Local\Programs\Python\Python310\lib\site-packages\zmq\_future.py:718: RuntimeWarning: Proactor event loop does not implement add_reader family of methods required for zmq. Registering an additional selector thread for add_reader support via tornado. Use `asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())` to avoid this warning.
+  self._get_loop()
+trimmed notebook written: C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\files_claude\trimmed_test.ipynb
+STATUS: OK
+elapsed: 380s
+executed notebook: C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\files_claude\trimmed_test_out.ipynb
+  ERROR in cell: 'torch.cuda.empty_cache(); gc.collect()\nfrom pytorch_grad_cam'
+    error OpenCV(5.0.0) D:\a\opencv-python\opencv-python\opencv\modules\imgproc\src\colormap.cpp:738: error: (-2:Unspecified error) in function 'void __cdecl cv::colormap::ColorMap::operator ()(const class cv::_InputArray &,const class cv::_OutputArray &) const'
+> Not supported (expected: 'src.dims <= 2'), where
+>     'src.dims' is 3
+> must be less than or equal to
+>     '2' is 2
+
+  ERROR in cell: 'best_epoch = max(history, key=lambda h: h["val_balanced_accu'
+    TypeError unsupported format string passed to NoneType.__format__
+2 error output(s) present in executed notebook

@@ -1,0 +1,8 @@
+C:\Users\sanja\AppData\Local\Programs\Python\Python310\lib\site-packages\zmq\_future.py:718: RuntimeWarning: Proactor event loop does not implement add_reader family of methods required for zmq. Registering an additional selector thread for add_reader support via tornado. Use `asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())` to avoid this warning.
+  self._get_loop()
+2026-09-05 23:37:26.549926: W tensorflow/compiler/mlir/lite/python/tf_tfl_flatbuffer_helpers.cc:364] Ignored output_format.
+2026-09-05 23:37:26.550416: W tensorflow/compiler/mlir/lite/python/tf_tfl_flatbuffer_helpers.cc:367] Ignored drop_control_dependency.
+trimmed notebook written: C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\files_claude\trimmed_test.ipynb
+STATUS: OK
+elapsed: 404s
+executed notebook: C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\files_claude\trimmed_test_out.ipynb

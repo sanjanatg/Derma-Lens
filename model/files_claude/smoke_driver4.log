@@ -1,0 +1,11 @@
+C:\Users\sanja\AppData\Local\Programs\Python\Python310\lib\site-packages\zmq\_future.py:718: RuntimeWarning: Proactor event loop does not implement add_reader family of methods required for zmq. Registering an additional selector thread for add_reader support via tornado. Use `asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())` to avoid this warning.
+  self._get_loop()
+trimmed notebook written: C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\files_claude\trimmed_test.ipynb
+STATUS: OK
+elapsed: 378s
+executed notebook: C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\files_claude\trimmed_test_out.ipynb
+  ERROR in cell: 'torch.cuda.empty_cache(); gc.collect()\ntarget_layer = best_m'
+    TypeError BaseCAM.__call__() got an unexpected keyword argument 'target_class'
+  ERROR in cell: 'from export.onnx_export import export_to_onnx\nfrom export.qu'
+    RuntimeError Input type (torch.FloatTensor) and weight type (torch.cuda.FloatTensor) should be the same or input should be a MKLDNN tensor and weight is a dense tensor
+2 error output(s) present in executed notebook

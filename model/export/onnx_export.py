@@ -48,7 +48,10 @@ def export_to_onnx(
     else:
         shape = tuple(input_size)
 
-    dummy = torch.randn(*shape)
+    # Place the dummy input on the model's device: a CUDA model + CPU dummy
+    # makes torch.onnx.export fail with a FloatTensor/FloatTensor mismatch.
+    model_device = next(model.parameters()).device
+    dummy = torch.randn(*shape, device=model_device)
 
     print(f"[ONNX Export] Tracing model with input {shape} ...")
     torch.onnx.export(
