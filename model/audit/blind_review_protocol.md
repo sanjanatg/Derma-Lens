@@ -32,6 +32,35 @@ vignette/black surround, bubbles/streaks/glare, none.
 fixed before any review was conducted; do not regenerate the HTML before
 collection, or the randomization changes.
 
+---
+
+## Message to send with the file (copy-paste)
+
+> Subject: 15-minute blinded image review for a paper on skin-lesion AI
+> fairness
+>
+> Hi — would you have ~15 minutes for a quick blinded review? It is part of
+> a fairness audit of a skin-lesion classifier we are preparing for
+> submission. The attached HTML file contains 15 short trials: for each you
+> pick which of two candidate images has an attention pattern most like a
+> target image, and tick any capture artifacts (rulers, ink markings, etc.)
+> you can see. No medical judgment is needed — it is purely visual pattern
+> matching, and it is fully blinded (neither of us knows which image is
+> which until afterwards).
+>
+> Two small asks: (1) open it in a normal browser (Chrome/Edge/Firefox), it
+> is a single self-contained file — nothing is uploaded anywhere; (2) do all
+> 15 trials in one sitting without scrolling back to earlier ones. At the
+> end there is a button that generates a text block of your answers — just
+> copy-paste that back to me.
+>
+> Context you should NOT look up beforehand: the images come from two
+> different dermatology photo cohorts; that is all I can say until after
+> you submit. Happy to unblind and walk you through the full study
+> afterwards — and you will be acknowledged in the paper.
+
+---
+
 *Based on: `figures/gradcam_step3c/` (45 overlays), `audit/step3d_placement.csv`,
 `audit/audit_step3d_report.json`; original unblinded pass by the authors,
 2026-09-06.*

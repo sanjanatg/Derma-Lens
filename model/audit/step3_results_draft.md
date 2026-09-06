@@ -62,9 +62,9 @@ field and does *not* focal-lock onto salient non-lesion objects. Paper
 rulers are in frame in 8/15 false-positive images (most also carry surgical
 ink markings), yet neither attracts elevated CAM mass (edge-band mass share
 median 0.410 vs 0.377 on true AK, Mann–Whitney p = 0.28; hot-pixel luminance
-ratio 0.96 vs 0.96, p = 0.93). Conversely, the in-domain melanoma
+ratio 0.95 vs 0.96, p = 0.93). Conversely, the in-domain melanoma
 comparators carry prominent capture artifacts of their own (dermoscope
-surrounds with black corners in 13/15; 8/15 with corner/center luminance
+surrounds with black corners in 13/15; 9/15 with corner/center luminance
 < 0.75, vs 1/15 false positives) while the MEL head remains lesion-localized
 (edge-band share 0.244). Capture artifacts are therefore *present* in the
 false-positive cohort as expected, but the activation is not localized on

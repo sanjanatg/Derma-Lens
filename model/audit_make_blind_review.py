@@ -93,7 +93,11 @@ def main():
              "label{margin-right:14px;white-space:nowrap}",
              ".art label{white-space:normal;margin-right:10px}",
              "textarea{width:95%;height:26px}",
-             ".rules li{margin:4px 0}</style></head><body>",
+             ".rules li{margin:4px 0}",
+             "#out{width:98%;height:120px;margin-top:8px;font-family:monospace;"
+             "font-size:11px}",
+             "button{padding:8px 16px;font-size:14px;cursor:pointer}",
+             "</style></head><body>",
              "<h1>Blinded Grad-CAM overlay review — 15 trials</h1>",
              "<div class='rules'><b>What you are looking at.</b> Each image "
              "is a skin-lesion photograph with a green attention overlay "
@@ -106,7 +110,9 @@ def main():
              "<li><b>Task 2</b>: for the <i>target</i> only, tick every "
              "capture artifact you can see.</li>",
              "<li>Please complete all 15 trials in one sitting; do not "
-             "reload between trials. Time: ~15 minutes.</li></ul></div>"]
+             "reload between trials. Time: ~15 minutes.</li></ul></div>",
+             "<p><b>Your initials: <input id='rev' size='8'></b> "
+             "(so the study lead can attribute the form)</p>"]
     for i, t in enumerate(trials, 1):
         opts = "".join(
             f"<label><input type='radio' name='t{i}match' value='{v}'>"
@@ -130,9 +136,41 @@ def main():
             f"(tick all): {checks}</p>"
             f"<p>Notes (optional): <textarea name='t{i}notes'></textarea></p>"
             f"</div>")
-    parts.append("<p><i>Completed forms: save the page or export answers as "
-                 "instructed by the study lead. The answer key is held "
-                 "separately (model/audit/blind_review_key.csv).</i></p>")
+    parts.append(
+        "<hr><h2>When you have finished all 15 trials</h2>"
+        "<p>Click the button below, then copy the text that appears and "
+        "send it to the study lead (paste into an email or message is "
+        "fine). No data leaves this page.</p>")
+    parts.append('<button onclick="exportAnswers()">'
+                 'Generate answer string</button><br>')
+    parts.append("<textarea id='out' readonly placeholder='Your answer "
+                 "string will appear here after you click the button.'>"
+                 "</textarea>")
+    script = '''<script>
+function exportAnswers(){
+  var trials=[];
+  var N = ''' + str(N_TRIALS) + ''';
+  for(var i=1;i<=N;i++){
+    var m=document.querySelector("input[name='t"+i+"match']:checked");
+    var c=document.querySelector("input[name='t"+i+"conf']:checked");
+    var arts=[].slice.call(document.querySelectorAll("input[name='t"+i+"art']:checked")).map(function(x){return x.value;});
+    var n=document.querySelector("textarea[name='t"+i+"notes']");
+    trials.push({trial:i, match:m?m.value:null,
+      confidence:c?parseInt(c.value,10):null,
+      artifacts:arts, notes:n?n.value:""});
+  }
+  var payload={form:'blind_review_gradcam_v2',
+    reviewer:document.getElementById('rev').value,
+    completed:new Date().toISOString(), trials:trials};
+  var s=JSON.stringify(payload,null,1);
+  var t=document.getElementById('out'); t.value=s;
+  t.select(); try{document.execCommand('copy');}catch(e){}
+}
+</script>
+'''
+    parts.append(script)
+    parts.append("<p><i>The answer key is held separately "
+                 "(model/audit/blind_review_key.csv).</i></p>")
     parts.append("</body></html>")
     OUT_HTML.write_text("\n".join(parts), encoding="utf-8")
 

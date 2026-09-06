@@ -31,6 +31,7 @@ FairDermNet combines a MobileNetV3-Large backbone with a Fairness Attention Modu
 where $\mathcal{L}_{eo}$ penalizes the equalized-odds gap~\cite{hardt2016} across tone groups. A provenance audit (\texttt{audit\_step0\_1.py}, September 2026) verified that the training-time equalized-odds term (\texttt{FairnessAwareLoss}, \texttt{N\_MALIGNANT} $=4$) and the per-epoch fairness signal both operated on the full malignant set \{MEL, BCC, SCC, AK\}; the deployed checkpoint therefore reflects optimization against the complete four-class malignancy definition, and no retraining was required. The model is exported PyTorch~$\rightarrow$~ONNX~$\rightarrow$~TFLite for on-device Flutter inference.
 
 \section{Defect 1: Stale Binary Risk-Label Mapping}
+\label{sec:defect1}
 Evaluation and threshold-calibration code derived a binary malignant/benign label via a hardcoded set membership test left over from a prior 9-class taxonomy (\texttt{class\_idx in \{0,1,2,3,4\}}) instead of the canonical \texttt{class\_idx\_to\_binary()} taxonomy function. Because Melanocytic Nevi (index 4) is the single largest class (53\% of training rows) and is unambiguously benign, this silently mislabeled it malignant in every consumer of the derived label. Training loss was unaffected (it consumes class labels directly), but three downstream artifacts were corrupted:
 \begin{itemize}
 \item DDI fairness evaluation used a derived label that, because DDI rows carry a placeholder \texttt{class\_idx=-1}, evaluated to a constant 0 for all 656 samples, causing an AUC computation failure and previously reported equalized-odds gap figures to originate from a stale code path, not the current model.
@@ -103,6 +104,7 @@ With defects corrected, we recomputed the clinical operating threshold under a $
 
 
 
+
 %% === STEP3-SECTION (auto-generated from audit CSVs; do not hand-edit numbers) ===
 \section{Score-Level Analysis of the Out-of-Domain Failure}
 \label{sec:step3}
@@ -131,6 +133,12 @@ Eval-half outcomes: at the shipped threshold (A), sensitivity is
 [0.000, 0.125] -- already below the 5\% target at the point estimate,
 but only because specificity is negligible in every group (overall
 0.016); there is no sensitivity gap left to close at this operating point.
+This is the same operating point at which Section~\ref{sec:defect1}
+reports the full-panel EO gap of 25.96\%: the near-perfect sensitivity and
+the wide gap are two readings of one fact -- malignant scores in every tone
+group sit almost always above threshold on DDI -- and the narrowness of that
+margin is exactly what re-tuning cannot exploit without collapsing
+sensitivity.
 Re-tuning cannot buy specificity instead: uniform re-tuning (B) yields
 overall specificity 0.025, and the per-group config (C) reaches only
 0.045 overall -- its V--VI specificity of 0.087
@@ -172,7 +180,9 @@ positives have AK as their top contributor (per-image AK probability
 0.91--0.97). The same column is nearly silent on benign in-domain images
 (mean 0.046 on the test panel) -- an order-of-magnitude shift
 (one-sided KS $=0.76$, $p=1\times10^{-218}$) -- while contributing normally on true
-in-domain malignancies (mean 0.163).Grad-CAM analysis~\cite{selvaraju2017} with matched comparators bounds what
+in-domain malignancies (mean 0.163).
+
+Grad-CAM analysis~\cite{selvaraju2017} with matched comparators bounds what
 attention maps can establish. The AK head's activation is diffuse \emph{in both settings}
 (median top-1\% CAM mass share 0.023 on DDI false positives vs 0.019 on
 true AK cases; Mann--Whitney $p=0.11$), so diffuseness is a property of the
@@ -191,7 +201,9 @@ focal-lock onto salient non-lesion objects. Manual inspection found paper
 rulers in frame in 8/15 false-positive images (most images also carry
 surgical ink markings), yet neither attracts elevated CAM mass (edge-band
 mass share 0.410 vs 0.377 on true AK, Mann--Whitney $p=0.28$;
-hot-pixel luminance ratio 0.95 vs 0.96, $p=0.93$).Conversely, the in-
+hot-pixel luminance ratio 0.95 vs 0.96, $p=0.93$).
+
+Conversely, the in-
 domain melanoma comparators are predominantly circular dermoscopic captures
 with black surrounds (9 of 15 with corner/center luminance below
 0.75, vs 1 of 15 false positives) while the MEL head remains
