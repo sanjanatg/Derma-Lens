@@ -26,5 +26,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/labels.txt
-    - assets/fairdermnet_int8.tflite     # INT8-quantized model (<6 MB)
+    # - assets/fairdermnet_int8.tflite     # INT8-quantized model (<6 MB) - TODO: Add model file
     - assets/threshold_config.json       # Clinical threshold + metadata
