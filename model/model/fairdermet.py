@@ -177,8 +177,8 @@ class FairDermNet(nn.Module):
 
     # -----------------------------------------------------------------------
     def forward(
-        self, x: torch.Tensor
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        self, x: torch.Tensor, return_aux: bool = False
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]] | torch.Tensor:
         # 1. Backbone
         feat = self.extract_features(x)               # [B, 960, 7, 7]
 
@@ -195,10 +195,9 @@ class FairDermNet(nn.Module):
         # 5. Risk head
         risk_logits = self.risk_head(embed)            # [B, num_classes]
 
-        if self.training:
+        if self.training or return_aux:
             return risk_logits, fitz_logits
-        else:
-            return risk_logits
+        return risk_logits
 
     # -----------------------------------------------------------------------
     def predict_proba(self, x: torch.Tensor) -> torch.Tensor:

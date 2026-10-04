@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -235,7 +234,9 @@ class InferenceService {
     // inlined to avoid a dart:math import cycle
     double result = 1.0;
     if (exp < 0) return 1.0 / _dartPow(base, -exp);
-    for (int i = 0; i < exp.truncate(); i++) result *= base;
+    for (int i = 0; i < exp.truncate(); i++) {
+      result *= base;
+    }
     return result * (1.0 + (exp - exp.truncateToDouble()) * (base - 1.0));
   }
 
