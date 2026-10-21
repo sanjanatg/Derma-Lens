@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show File;
 
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -97,8 +98,14 @@ class InferenceService {
   ///
   /// Returns [AnalysisResult] or null on failure.
   Future<AnalysisResult?> runInference(String imagePath) async {
+    // Auto-load the model on first use (loadModel() previously was never
+    // called anywhere in the app, so runInference always bailed out here).
     if (!_isLoaded || _interpreter == null) {
-      debugPrint('[InferenceService] ⚠ Model not loaded — call loadModel() first.');
+      debugPrint('[InferenceService] Model not loaded — loading now…');
+      await loadModel();
+    }
+    if (!_isLoaded || _interpreter == null) {
+      debugPrint('[InferenceService] ⚠ Model failed to load — cannot infer.');
       return null;
     }
 
@@ -240,25 +247,21 @@ class InferenceService {
     return result * (1.0 + (exp - exp.truncateToDouble()) * (base - 1.0));
   }
 
-  /// Read bytes from the filesystem via platform channel (outside of assets).
+  /// Read bytes from the filesystem or from Flutter assets.
   Future<Uint8List?> _readFileBytes(String path) async {
     try {
-      // Use rootBundle for asset paths, dart:io for camera captures
+      // Asset paths go through rootBundle
       if (path.startsWith('assets/')) {
         return (await rootBundle.load(path)).buffer.asUint8List();
       }
-      // Camera output is a filesystem path
-      final byteData = await const MethodChannel('file_access')
-          .invokeMethod<Uint8List>('readFile', {'path': path});
-      return byteData;
-    } catch (_) {
-      // Fallback: try asset
-      try {
-        return (await rootBundle.load(path)).buffer.asUint8List();
-      } catch (e) {
-        debugPrint('[InferenceService] ⚠ Could not read image: $path — $e');
-        return null;
-      }
+      // Camera output is a regular filesystem path — read it directly.
+      // (Previously this used a 'file_access' MethodChannel that has no
+      // native handler, so every real capture threw MissingPluginException
+      // and inference failed.)
+      return await File(path).readAsBytes();
+    } catch (e) {
+      debugPrint('[InferenceService] ⚠ Could not read image: $path — $e');
+      return null;
     }
   }
 
