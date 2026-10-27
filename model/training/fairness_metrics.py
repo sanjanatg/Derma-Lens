@@ -1,6 +1,25 @@
+"""
+fairness_metrics.py — Per-epoch and post-hoc fairness metrics (8-class)
+------------------------------------------------------------------------
+Notebook cell 3 imports `compute_epoch_metrics`, `compute_fairness_metrics`,
+`build_fairness_report` and `FITZPATRICK_NAMES` from this module.
+
+Malignant-class convention (locked in GEMINI.md and model/class_taxonomy.py):
+    MEL(0), BCC(1), SCC(2), AK(3) are malignant; NV(4), BKL(5), DF(6),
+    VASC(7) are benign. Bowen's (4) was removed from the experiment, so the
+    8-class indices are contiguous — but ALL malignant logic must key off
+    MALIGNANT_CLASSES below, never off a hardcoded count of classes.
+"""
+
 import torch
 import numpy as np
 from typing import Dict, List, Optional
+
+try:
+    # Single source of truth (pure-constants module, safe to import)
+    from model.class_taxonomy import MALIGNANT_CLASSES
+except ImportError:  # module executed outside the project-root sys.path
+    MALIGNANT_CLASSES = {0, 1, 2, 3}
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -25,18 +44,41 @@ def group_sensitivity(
     groups: torch.Tensor,
     positive_class: int = 1,
 ) -> Dict[int, float]:
+    """Per-group recall of `positive_class`.
+
+    NOTE on `positive_class`: the default (1 = BCC) only makes sense for
+    binary 0/1 label tensors (as built in compute_epoch_metrics /
+    compute_fairness_metrics). When callers pass 8-class predictions, any
+    value in MALIGNANT_CLASSES is treated as "any malignant class" so AK is
+    never silently excluded.
+    """
     pred_cls = preds.argmax(dim=1)
     out = {}
+    mal_t = torch.tensor(sorted(MALIGNANT_CLASSES))
+    # "Any malignant" logic only applies when predictions live in the 8-class
+    # space; for binary 0/1 pred tensors an isin() against the malignant set
+    # would be vacuously true and flatten every group's sensitivity to 1.0.
+    mal_any = (preds.dim() == 2 and preds.shape[1] > 2
+               and positive_class in MALIGNANT_CLASSES)
     for g in torch.unique(groups):
+        g_int = int(g.item())
+        if g_int < 0:   # unknown tone (-1) — excluded from fairness metrics
+            continue
         m = groups == g
         y_true = labels[m]
         y_pred = pred_cls[m]
-        positives = (y_true == positive_class).sum().float()
+        if mal_any:
+            positives = torch.isin(y_true, mal_t).sum().float()
+        else:
+            positives = (y_true == positive_class).sum().float()
         if positives.item() == 0:
-            out[int(g.item())] = 0.0
+            out[g_int] = 0.0
             continue
-        tp = ((y_true == positive_class) & (y_pred == positive_class)).sum().float()
-        out[int(g.item())] = float(tp / (positives + 1e-8))
+        if mal_any:
+            tp = (torch.isin(y_true, mal_t) & torch.isin(y_pred, mal_t)).sum().float()
+        else:
+            tp = ((y_true == positive_class) & (y_pred == positive_class)).sum().float()
+        out[g_int] = float(tp / (positives + 1e-8))
     return out
 
 
@@ -52,6 +94,9 @@ def demographic_parity_gap(preds, groups, positive_class: int = 1) -> float:
     pred_cls = preds.argmax(dim=1)
     rates = []
     for g in torch.unique(groups):
+        g_int = int(g.item())
+        if g_int < 0:   # unknown tone (-1) — excluded
+            continue
         m = groups == g
         rate = (pred_cls[m] == positive_class).float().mean().item()
         rates.append(rate)
@@ -85,6 +130,11 @@ def compute_epoch_metrics(
       - balanced accuracy (mean per-class recall)
       - equalized odds gap across Fitzpatrick groups
       - per-class accuracy dict
+
+    Malignant = MALIGNANT_CLASSES ({0,1,2,3}: MEL, BCC, SCC, AK), per the
+    8-class taxonomy locked in GEMINI.md. Previously this function used a
+    3-class malignant set ({0,1,2}) and summed probs over [:, :3], silently
+    excluding AK from the per-epoch fairness signal.
     """
     pred_cls = all_preds.argmax(dim=1)
     correct = (pred_cls == all_labels).float()
@@ -103,15 +153,14 @@ def compute_epoch_metrics(
         per_class_acc[c] = recall
     balanced_acc = float(np.mean(per_class_recall)) if per_class_recall else 0.0
 
-    # Fairness: equalized odds gap (binary: malignant = classes 0,1,2)
-    malignant_classes = {0, 1, 2}
-    binary_labels = torch.tensor(
-        [1 if l.item() in malignant_classes else 0 for l in all_labels],
-        dtype=torch.long,
-    )
-    # Build binary preds: sum of malignant class probs
-    if all_preds.shape[1] >= 3:
-        malignant_prob = all_preds[:, :3].sum(dim=1, keepdim=True)
+    # Fairness: equalized odds gap (binary: malignant = MALIGNANT_CLASSES 0..3)
+    mal_t = torch.tensor(sorted(MALIGNANT_CLASSES), device=all_labels.device)
+    binary_labels = torch.isin(all_labels, mal_t).long()
+    # Build binary preds: sum of malignant class probs (softmax so the sum is a
+    # probability even when all_preds are logits)
+    if all_preds.shape[1] > max(MALIGNANT_CLASSES):
+        probs = torch.softmax(all_preds.float(), dim=1)
+        malignant_prob = probs[:, sorted(MALIGNANT_CLASSES)].sum(dim=1, keepdim=True)
         benign_prob = 1.0 - malignant_prob
         binary_preds = torch.cat([benign_prob, malignant_prob], dim=1)
     else:
@@ -149,6 +198,8 @@ def compute_fairness_metrics(
     group_metrics = {}
     for g in torch.unique(all_groups):
         g_int = int(g.item())
+        if g_int < 0:   # unknown tone (-1) — excluded from fairness breakdown
+            continue
         mask = all_groups == g
 
         y_true = all_labels[mask]
@@ -193,14 +244,16 @@ def compute_fairness_metrics(
             "specificity": specificity,
         }
 
-    eo_gap = equalized_odds_gap(
-        all_preds,
-        torch.tensor(
-            [1 if l.item() in malignant_classes else 0 for l in all_labels],
-            dtype=torch.long,
-        ),
-        all_groups,
-    )
+    # Binary equalized-odds gap. equalized_odds_gap() indexes predictions with
+    # argmax(dim=1), so pass explicit binary probs (benign=0 / malignant=1);
+    # passing raw 8-class logits here would count only BCC argmax wins as
+    # malignant positives.
+    mal_t = torch.tensor(sorted(MALIGNANT_CLASSES), device=all_labels.device)
+    binary_labels = torch.isin(all_labels, mal_t).long()
+    probs = torch.softmax(all_preds.float(), dim=1)
+    malignant_prob = probs[:, sorted(MALIGNANT_CLASSES)].sum(dim=1, keepdim=True)
+    binary_preds = torch.cat([1.0 - malignant_prob, malignant_prob], dim=1)
+    eo_gap = equalized_odds_gap(binary_preds, binary_labels, all_groups)
 
     return {
         "group_metrics": group_metrics,

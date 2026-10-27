@@ -1,0 +1,190 @@
+{
+  "generated": "2026-09-06T21:57:22.777197",
+  "cohort_x_modality_prov": {
+    "('fp_DDI_AK', 'clinical')": 15,
+    "('fp_DDI_AK', 'derm')": 0,
+    "('true_AK', 'clinical')": 15,
+    "('true_AK', 'derm')": 0,
+    "('true_MEL', 'clinical')": 0,
+    "('true_MEL', 'derm')": 15
+  },
+  "prov_vs_proxy_agreement": 0.8444444444444444,
+  "test_panel_class_x_dataset": {
+    "(0, 'HAM10000')": 167,
+    "(0, 'ISIC2019')": 678,
+    "(0, 'PAD_UFES_20')": 8,
+    "(1, 'HAM10000')": 77,
+    "(1, 'ISIC2019')": 498,
+    "(1, 'PAD_UFES_20')": 127,
+    "(2, 'HAM10000')": 0,
+    "(2, 'ISIC2019')": 94,
+    "(2, 'PAD_UFES_20')": 29,
+    "(3, 'HAM10000')": 49,
+    "(3, 'ISIC2019')": 130,
+    "(3, 'PAD_UFES_20')": 110,
+    "(4, 'HAM10000')": 1006,
+    "(4, 'ISIC2019')": 1931,
+    "(4, 'PAD_UFES_20')": 37,
+    "(5, 'HAM10000')": 165,
+    "(5, 'ISIC2019')": 394,
+    "(5, 'PAD_UFES_20')": 35,
+    "(6, 'HAM10000')": 17,
+    "(6, 'ISIC2019')": 36,
+    "(6, 'PAD_UFES_20')": 0,
+    "(7, 'HAM10000')": 21,
+    "(7, 'ISIC2019')": 38,
+    "(7, 'PAD_UFES_20')": 0
+  },
+  "test_panel_mel_derm_frac": 0.9906213364595545,
+  "test_panel_ak_derm_frac": 0.6193771626297578,
+  "tests": {
+    "conc_top1pct__mel_vs_ak_unmatched": {
+      "median_a": 0.0246818549931049,
+      "median_b": 0.018510116264224,
+      "n_a": 15,
+      "n_b": 15,
+      "p": 0.0007802051762911044
+    },
+    "conc_top1pct__mel_vs_ak__derm": {
+      "n_a": 15,
+      "n_b": 0,
+      "p": null
+    },
+    "conc_top1pct__mel_vs_ak__clinical": {
+      "n_a": 0,
+      "n_b": 15,
+      "p": null
+    },
+    "conc_top1pct__within_MEL_derm_vs_clinical": {
+      "n_a": 15,
+      "n_b": 0,
+      "p": null
+    },
+    "conc_top1pct__within_AK_derm_vs_clinical": {
+      "n_a": 0,
+      "n_b": 15,
+      "p": null
+    },
+    "conc_top1pct__within_FP_derm_vs_clinical": {
+      "n_a": 0,
+      "n_b": 15,
+      "p": null
+    },
+    "cam_outside_otsu__mel_vs_ak_unmatched": {
+      "median_a": 0.4155383110046386,
+      "median_b": 0.4709358215332031,
+      "n_a": 15,
+      "n_b": 15,
+      "p": 0.5897385933186072
+    },
+    "cam_outside_otsu__mel_vs_ak__derm": {
+      "n_a": 15,
+      "n_b": 0,
+      "p": null
+    },
+    "cam_outside_otsu__mel_vs_ak__clinical": {
+      "n_a": 0,
+      "n_b": 15,
+      "p": null
+    },
+    "cam_outside_otsu__within_MEL_derm_vs_clinical": {
+      "n_a": 15,
+      "n_b": 0,
+      "p": null
+    },
+    "cam_outside_otsu__within_AK_derm_vs_clinical": {
+      "n_a": 0,
+      "n_b": 15,
+      "p": null
+    },
+    "cam_outside_otsu__within_FP_derm_vs_clinical": {
+      "n_a": 0,
+      "n_b": 15,
+      "p": null
+    },
+    "conc_top1pct__derm_MEL_vs_derm_AK": {
+      "median_a": 0.0246818549931049,
+      "median_b": 0.03850415349006653,
+      "n_a": 15,
+      "n_b": 15,
+      "p": 0.007016199234239618
+    },
+    "conc_top1pct__clin_MEL_vs_clin_AK": {
+      "median_a": 0.08974378183484077,
+      "median_b": 0.018510116264224,
+      "n_a": 8,
+      "n_b": 15,
+      "p": 4.0790187512492e-06
+    },
+    "conc_top1pct__within_AK_derm_vs_clin": {
+      "median_a": 0.03850415349006653,
+      "median_b": 0.018510116264224,
+      "n_a": 15,
+      "n_b": 15,
+      "p": 5.052703540469845e-06
+    },
+    "conc_top1pct__within_MEL_derm_vs_clin": {
+      "median_a": 0.0246818549931049,
+      "median_b": 0.08974378183484077,
+      "n_a": 15,
+      "n_b": 8,
+      "p": 4.0790187512492e-06
+    },
+    "cam_outside_otsu__derm_MEL_vs_derm_AK": {
+      "median_a": 0.4155383110046386,
+      "median_b": 0.47965008020401,
+      "n_a": 15,
+      "n_b": 15,
+      "p": 0.6186695570822622
+    },
+    "cam_outside_otsu__clin_MEL_vs_clin_AK": {
+      "median_a": 0.3413369953632355,
+      "median_b": 0.4709358215332031,
+      "n_a": 8,
+      "n_b": 15,
+      "p": 0.02347475291343914
+    },
+    "cam_outside_otsu__within_AK_derm_vs_clin": {
+      "median_a": 0.47965008020401,
+      "median_b": 0.4709358215332031,
+      "n_a": 15,
+      "n_b": 15,
+      "p": 0.9009714934164412
+    },
+    "cam_outside_otsu__within_MEL_derm_vs_clin": {
+      "median_a": 0.4155383110046386,
+      "median_b": 0.3413369953632355,
+      "n_a": 15,
+      "n_b": 8,
+      "p": 0.19011082693947143
+    },
+    "cam_lum_r__derm_MEL_vs_derm_AK": {
+      "median_a": 0.1073526014410532,
+      "median_b": -0.41003534850733087,
+      "n_a": 15,
+      "n_b": 15,
+      "p": 0.01614027989360373
+    },
+    "cam_lum_r__clin_MEL_vs_clin_AK": {
+      "median_a": -0.5965355723289789,
+      "median_b": -0.2109781296584904,
+      "n_a": 8,
+      "n_b": 15,
+      "p": 0.0005547465501698911
+    },
+    "cam_lum_r__within_AK_derm_vs_clin": {
+      "median_a": -0.41003534850733087,
+      "median_b": -0.2109781296584904,
+      "n_a": 15,
+      "n_b": 15,
+      "p": 0.1844100692216365
+    },
+    "cam_lum_r__within_MEL_derm_vs_clin": {
+      "median_a": 0.1073526014410532,
+      "median_b": -0.5965355723289789,
+      "n_a": 15,
+      "n_b": 8,
+      "p": 0.0002732942563336964
+    }
+  }
+}

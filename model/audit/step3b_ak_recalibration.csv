@@ -1,0 +1,3 @@
+config,group,threshold,n,n_pos,n_neg,sensitivity,sens_lo,sens_hi,specificity,spec_lo,spec_hi
+baseline,ALL,0.2846,330,86,244,0.9651162790697675,nan,nan,0.02459016393442623,nan,nan
+ak_adj_lam0.25,ALL,0.2846,330,86,244,0.9767441860465116,nan,nan,0.02459016393442623,nan,nan

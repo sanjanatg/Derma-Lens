@@ -1,0 +1,429 @@
+{
+  "generated": "2026-09-06T10:48:35",
+  "seed": 42,
+  "n_boot": 2000,
+  "conf": 0.95,
+  "cache_prob_drift": 1.1920928955078125e-07,
+  "step0_findings": [
+    {
+      "severity": "INFO",
+      "code": "S0.4-remap-guard-present",
+      "detail": "notebook remap cell is retired: legacy-indices guard in place (raises RuntimeError if master_dataset.csv is back in the pre-fix 9-class layout)"
+    }
+  ],
+  "split": {
+    "tune_n": 326,
+    "eval_n": 330,
+    "tune_pos": 85,
+    "eval_pos": 86
+  },
+  "shipped_threshold": 0.25,
+  "grid": [
+    {
+      "tau": 0.95,
+      "lam": 0.0,
+      "thr": {
+        "0": 0.2681,
+        "2": 0.1885,
+        "4": 0.3971
+      },
+      "tune_gap": 0.014639639639639657
+    },
+    {
+      "tau": 0.95,
+      "lam": 0.25,
+      "thr": {
+        "0": 0.2431,
+        "2": 0.2385,
+        "4": 0.3721
+      },
+      "tune_gap": 0.014639639639639657
+    },
+    {
+      "tau": 0.95,
+      "lam": 0.5,
+      "thr": {
+        "0": 0.2431,
+        "2": 0.2385,
+        "4": 0.3721
+      },
+      "tune_gap": 0.014639639639639657
+    },
+    {
+      "tau": 0.95,
+      "lam": 1.0,
+      "thr": {
+        "0": 0.2431,
+        "2": 0.2385,
+        "4": 0.3721
+      },
+      "tune_gap": 0.014639639639639657
+    },
+    {
+      "tau": 0.95,
+      "lam": 2.0,
+      "thr": {
+        "0": 0.2431,
+        "2": 0.2385,
+        "4": 0.3721
+      },
+      "tune_gap": 0.014639639639639657
+    },
+    {
+      "tau": 0.96,
+      "lam": 0.0,
+      "thr": {
+        "0": 0.9748,
+        "2": 0.1885,
+        "4": 0.9612
+      },
+      "tune_gap": 0.9313063063063064
+    },
+    {
+      "tau": 0.96,
+      "lam": 0.25,
+      "thr": {
+        "0": 0.9248,
+        "2": 0.2385,
+        "4": 0.9112
+      },
+      "tune_gap": 0.722972972972973
+    },
+    {
+      "tau": 0.96,
+      "lam": 0.5,
+      "thr": {
+        "0": 0.9248,
+        "2": 0.2385,
+        "4": 0.9112
+      },
+      "tune_gap": 0.722972972972973
+    },
+    {
+      "tau": 0.96,
+      "lam": 1.0,
+      "thr": {
+        "0": 0.9248,
+        "2": 0.2385,
+        "4": 0.9112
+      },
+      "tune_gap": 0.722972972972973
+    },
+    {
+      "tau": 0.96,
+      "lam": 2.0,
+      "thr": {
+        "0": 0.9248,
+        "2": 0.2385,
+        "4": 0.9112
+      },
+      "tune_gap": 0.722972972972973
+    },
+    {
+      "tau": 0.97,
+      "lam": 0.0,
+      "thr": {
+        "0": 0.9748,
+        "2": 0.1885,
+        "4": 0.9612
+      },
+      "tune_gap": 0.9313063063063064
+    },
+    {
+      "tau": 0.97,
+      "lam": 0.25,
+      "thr": {
+        "0": 0.9248,
+        "2": 0.2385,
+        "4": 0.9112
+      },
+      "tune_gap": 0.722972972972973
+    },
+    {
+      "tau": 0.97,
+      "lam": 0.5,
+      "thr": {
+        "0": 0.9248,
+        "2": 0.2385,
+        "4": 0.9112
+      },
+      "tune_gap": 0.722972972972973
+    },
+    {
+      "tau": 0.97,
+      "lam": 1.0,
+      "thr": {
+        "0": 0.9248,
+        "2": 0.2385,
+        "4": 0.9112
+      },
+      "tune_gap": 0.722972972972973
+    },
+    {
+      "tau": 0.97,
+      "lam": 2.0,
+      "thr": {
+        "0": 0.9248,
+        "2": 0.2385,
+        "4": 0.9112
+      },
+      "tune_gap": 0.722972972972973
+    }
+  ],
+  "selected": {
+    "tau": 0.95,
+    "lam": 0.25,
+    "thr": {
+      "0": 0.2431,
+      "2": 0.2385,
+      "4": 0.3721
+    }
+  },
+  "eval_results": [
+    {
+      "name": "A. baseline - shipped uniform threshold 0.2500 (threshold_config.json)",
+      "thresholds": {
+        "0": 0.25,
+        "2": 0.25,
+        "4": 0.25,
+        "overall": 0.25
+      },
+      "metrics": {
+        "0": {
+          "n": 105,
+          "n_pos": 25,
+          "n_neg": 80,
+          "sens": 1.0,
+          "spec": 0.0375
+        },
+        "2": {
+          "n": 121,
+          "n_pos": 37,
+          "n_neg": 84,
+          "sens": 1.0,
+          "spec": 0.011904761904761904
+        },
+        "4": {
+          "n": 104,
+          "n_pos": 24,
+          "n_neg": 80,
+          "sens": 0.9583333333333334,
+          "spec": 0.0
+        },
+        "overall": {
+          "n": 330,
+          "n_pos": 86,
+          "n_neg": 244,
+          "sens": 0.9883720930232558,
+          "spec": 0.01639344262295082
+        }
+      },
+      "eo_gap": 0.04166666666666663,
+      "eo_gap_ci": [
+        0.0,
+        0.125
+      ],
+      "ci": {
+        "0": {
+          "sens_ci": [
+            1.0,
+            1.0
+          ],
+          "spec_ci": [
+            0.0,
+            0.0875
+          ]
+        },
+        "2": {
+          "sens_ci": [
+            1.0,
+            1.0
+          ],
+          "spec_ci": [
+            0.0,
+            0.03571428571428571
+          ]
+        },
+        "4": {
+          "sens_ci": [
+            0.875,
+            1.0
+          ],
+          "spec_ci": [
+            0.0,
+            0.0
+          ]
+        },
+        "eo_gap_ci": [
+          0.0,
+          0.125
+        ]
+      }
+    },
+    {
+      "name": "B. baseline - uniform threshold 0.2947 tuned on tune half (target sens>=0.95)",
+      "thresholds": {
+        "0": 0.2947,
+        "2": 0.2947,
+        "4": 0.2947,
+        "overall": 0.2947
+      },
+      "metrics": {
+        "0": {
+          "n": 105,
+          "n_pos": 25,
+          "n_neg": 80,
+          "sens": 1.0,
+          "spec": 0.0375
+        },
+        "2": {
+          "n": 121,
+          "n_pos": 37,
+          "n_neg": 84,
+          "sens": 1.0,
+          "spec": 0.023809523809523808
+        },
+        "4": {
+          "n": 104,
+          "n_pos": 24,
+          "n_neg": 80,
+          "sens": 0.875,
+          "spec": 0.0125
+        },
+        "overall": {
+          "n": 330,
+          "n_pos": 86,
+          "n_neg": 244,
+          "sens": 0.9651162790697675,
+          "spec": 0.02459016393442623
+        }
+      },
+      "eo_gap": 0.125,
+      "eo_gap_ci": [
+        0.0,
+        0.25
+      ],
+      "ci": {
+        "0": {
+          "sens_ci": [
+            1.0,
+            1.0
+          ],
+          "spec_ci": [
+            0.0,
+            0.0875
+          ]
+        },
+        "2": {
+          "sens_ci": [
+            1.0,
+            1.0
+          ],
+          "spec_ci": [
+            0.0,
+            0.05952380952380952
+          ]
+        },
+        "4": {
+          "sens_ci": [
+            0.75,
+            1.0
+          ],
+          "spec_ci": [
+            0.0,
+            0.0375
+          ]
+        },
+        "eo_gap_ci": [
+          0.0,
+          0.25
+        ]
+      }
+    },
+    {
+      "name": "C. per-group thresholds (tau>=0.95, lam=0.25)",
+      "thresholds": {
+        "0": 0.2431,
+        "2": 0.2385,
+        "4": 0.3721,
+        "overall": 0.2947
+      },
+      "metrics": {
+        "0": {
+          "n": 105,
+          "n_pos": 25,
+          "n_neg": 80,
+          "sens": 1.0,
+          "spec": 0.0375
+        },
+        "2": {
+          "n": 121,
+          "n_pos": 37,
+          "n_neg": 84,
+          "sens": 1.0,
+          "spec": 0.011904761904761904
+        },
+        "4": {
+          "n": 104,
+          "n_pos": 24,
+          "n_neg": 80,
+          "sens": 0.875,
+          "spec": 0.0875
+        },
+        "overall": {
+          "n": 330,
+          "n_pos": 86,
+          "n_neg": 244,
+          "sens": 0.9651162790697675,
+          "spec": 0.045081967213114756
+        }
+      },
+      "eo_gap": 0.125,
+      "eo_gap_ci": [
+        0.0,
+        0.25
+      ],
+      "ci": {
+        "0": {
+          "sens_ci": [
+            1.0,
+            1.0
+          ],
+          "spec_ci": [
+            0.0,
+            0.0875
+          ]
+        },
+        "2": {
+          "sens_ci": [
+            1.0,
+            1.0
+          ],
+          "spec_ci": [
+            0.0,
+            0.03571428571428571
+          ]
+        },
+        "4": {
+          "sens_ci": [
+            0.75,
+            1.0
+          ],
+          "spec_ci": [
+            0.025,
+            0.1625
+          ]
+        },
+        "eo_gap_ci": [
+          0.0,
+          0.25
+        ]
+      }
+    }
+  ],
+  "notes": {
+    "design": "thresholds fitted on a (group x label)-stratified tune half of DDI and evaluated once on the held-out eval half; baseline B (uniform re-tuned threshold) isolates the group-specific benefit from plain re-tuning",
+    "n_is_raw": "n, n_pos, n_neg are raw eval-half counts; bootstrap is stratified by group x label so they are exact in every replicate",
+    "small_n_warning": "eval halves hold ~50 positives per group - CIs are wide by construction; treat the gap-reduction as indicative, not definitive"
+  }
+}

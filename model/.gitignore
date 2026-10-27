@@ -9,3 +9,5 @@ checkpoints/
 export/*.onnx
 export/*.tflite
 export/savedmodel/
+export/_tmp_saved_model/
+export/*.onnx.data

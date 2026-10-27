@@ -1,0 +1,13 @@
+config,group,threshold,n,n_pos,n_neg,sensitivity,sens_ci_low,sens_ci_high,specificity,spec_ci_low,spec_ci_high
+A. baseline - shipped uniform threshold 0.2500 (threshold_config.json),FST I-II,0.25,105,25,80,1.0,nan,nan,0.0375,nan,nan
+A. baseline - shipped uniform threshold 0.2500 (threshold_config.json),FST III-IV,0.25,121,37,84,1.0,nan,nan,0.011904761904761904,nan,nan
+A. baseline - shipped uniform threshold 0.2500 (threshold_config.json),FST V-VI,0.25,104,24,80,0.9583333333333334,nan,nan,0.0,nan,nan
+A. baseline - shipped uniform threshold 0.2500 (threshold_config.json),ALL,0.25,330,86,244,0.9883720930232558,nan,nan,0.01639344262295082,nan,nan
+B. baseline - uniform threshold 0.2947 tuned on tune half (target sens>=0.95),FST I-II,0.2947,105,25,80,1.0,nan,nan,0.0375,nan,nan
+B. baseline - uniform threshold 0.2947 tuned on tune half (target sens>=0.95),FST III-IV,0.2947,121,37,84,1.0,nan,nan,0.023809523809523808,nan,nan
+B. baseline - uniform threshold 0.2947 tuned on tune half (target sens>=0.95),FST V-VI,0.2947,104,24,80,0.875,nan,nan,0.0125,nan,nan
+B. baseline - uniform threshold 0.2947 tuned on tune half (target sens>=0.95),ALL,0.2947,330,86,244,0.9651162790697675,nan,nan,0.02459016393442623,nan,nan
+"C. per-group thresholds (tau>=0.95, lam=0.25)",FST I-II,0.2431,105,25,80,1.0,nan,nan,0.0375,nan,nan
+"C. per-group thresholds (tau>=0.95, lam=0.25)",FST III-IV,0.2385,121,37,84,1.0,nan,nan,0.011904761904761904,nan,nan
+"C. per-group thresholds (tau>=0.95, lam=0.25)",FST V-VI,0.3721,104,24,80,0.875,nan,nan,0.0875,nan,nan
+"C. per-group thresholds (tau>=0.95, lam=0.25)",ALL,0.2947,330,86,244,0.9651162790697675,nan,nan,0.045081967213114756,nan,nan

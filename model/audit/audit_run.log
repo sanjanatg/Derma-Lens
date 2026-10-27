@@ -1,0 +1,82 @@
+============================================================================================================
+DermaLens — STEP 0+1 AUDIT
+  started: 2026-09-06 00:49:55  |  seed=42  |  n_boot=2000  |  conf=0.95
+============================================================================================================
+
+STEP 0 — artifact / code audit (no model load)
+------------------------------------------------------------------------------------------------------------
+  S0.1 OK  checkpoint risk head outputs 8 classes == taxonomy NUM_CLASSES (risk_head.3.weight)
+  S0.2 artifact mtimes: best.pth=2026-08-20 02:58, split_test.csv=2026-09-05 23:33, split_train.csv=2026-09-05 23:33, test_fairness_report.txt=2026-09-05 23:36, threshold_config.json=2026-09-05 23:36, training_history.json=2026-09-05 23:34
+  S0.3     threshold_config: clinical_threshold=0.25, sens=0.9603, spec=0.5543, auc=0.9239
+  S0.5 OK  split_train.csv: labels/tones match master_dataset.csv (26,350 rows)
+  S0.5 OK  split_val.csv: labels/tones match master_dataset.csv (5,647 rows)
+  S0.5 OK  split_test.csv: labels/tones match master_dataset.csv (5,647 rows)
+
+  Step 0 findings:
+    [!!] S0.4-stale-remap: notebook still contains "REMAP = {4: 5, 5: 6, 6: 7, 7: 8}" - re-running the remap cell on the already-remapped master_dataset.csv shifts NV->BKL->DF->VASC and silently corrupts labels. Delete/guard that cell before any Kernel > Restart & Run All.
+    [!!] S0.4-3-malignant: fairness_metrics.py: compute_epoch_metrics uses malignant_classes={0,1,2} - AK (class 3) is excluded from the per-epoch fairness signal; GEMINI.md locks malignant = {0,1,2,3}
+    [!!] S0.4-3-class-prob: fairness_metrics.py: compute_epoch_metrics derives malignant prob as all_preds[:, :3].sum - hardcodes 3 malignant classes; must sum over MALIGNANT_CLASSES (0..3)
+    [ ~] S0.4-cell2-9-class-print: Cell 2 still prints "Classes: 9 (taxonomy loaded in Cell 3)" while the pipeline is 8-class
+
+  Step 0 summary: 3 BLOCKER, 1 WARN, 0 INFO
+
+STEP 1 — bootstrap confidence intervals (checkpoint inference)
+------------------------------------------------------------------------------------------------------------
+[FairDermNet] Loaded weights from C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\checkpoints\best.pth
+  cached predictions -> C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\audit\preds_cache.npz
+
+============================================================================================================
+S1.1  TEST SET  |  total n=5,647  |  ITA-estimated tones
+n / n_pos / n_neg are RAW per-group counts - quote them beside every CI.
+============================================================================================================
+group                                        | sensitivity [95% CI]         | specificity [95% CI]         | accuracy [95% CI]           
+-----------------------------------------------------------------------------------------------------------------------------------------
+FST I  (n=32 | n_pos=20 | n_neg=12)          | 100.0% [100.0, 100.0]        | 91.7% [75.0, 100.0]          | 96.9% [90.6, 100.0]         
+FST II  (n=3,743 | n_pos=1,275 | n_neg=2,468) | 81.2% [79.0, 83.3]           | 87.8% [86.6, 89.1]           | 85.5% [84.5, 86.6]          
+FST III  (n=1,839 | n_pos=653 | n_neg=1,186) | 84.7% [81.9, 87.3]           | 86.5% [84.6, 88.4]           | 85.9% [84.3, 87.4]          
+FST IV  (n=30 | n_pos=16 | n_neg=14)         | 93.8% [81.2, 100.0]          | 71.4% [50.0, 92.9]           | 83.3% [70.0, 93.3]          
+FST V  (n=3 | n_pos=3 | n_neg=0)             | 66.7% [CI n/a]               | nan% [CI n/a]                | 66.7% [CI n/a]              
+FST VI  (n=0 | n_pos=0 | n_neg=0)            | nan% [CI n/a]                | nan% [CI n/a]                | nan% [CI n/a]               
+ALL (ITA-estimated tones)  (n=5,647 | n_pos=1,967 | n_neg=3,680) | 82.6% [81.0, 84.3]           | 87.3% [86.3, 88.4]           | 85.7% [84.8, 86.6]          
+
+  Binary ROC-AUC  (n=5,647 | n_pos=1,967 | n_neg=3,680)   0.9239% [0.9166, 0.9316]
+
+  Sensitivity contrasts (95% CI, stratified percentile bootstrap; n_pos = raw malignant counts per group):
+  contrast                         diff                95% CI  n_pos_a  n_pos_b
+  FST 2 - FST 1                  -18.8% [ -20.9,  -16.6]    1,275       20
+  FST 3 - FST 1                  -15.3% [ -18.1,  -12.7]      653       20
+  FST 4 - FST 1                   -6.2% [ -18.8,    0.0]       16       20
+  FST 5 - FST 1                  -33.3% [-100.0,    0.0]        3       20
+
+  Equalized-odds gap (sensitivity, max-min over groups [0, 1, 2, 3, 4]):  33.33%  [17.49, 100.00]   target < 5%
+
+============================================================================================================
+S1.2  DDI HELD-OUT  |  total n=656  |  expert-labelled tones
+n / n_pos / n_neg are RAW per-group counts - quote them beside every CI.
+============================================================================================================
+group                                        | sensitivity [95% CI]         | specificity [95% CI]         | accuracy [95% CI]           
+-----------------------------------------------------------------------------------------------------------------------------------------
+FST I-II  (n=208 | n_pos=49 | n_neg=159)     | 85.7% [75.5, 95.9]           | 22.0% [15.7, 29.6]           | 37.0% [31.7, 42.8]          
+FST III-IV  (n=241 | n_pos=74 | n_neg=167)   | 90.5% [83.8, 95.9]           | 27.5% [21.0, 34.1]           | 46.9% [41.5, 52.3]          
+FST V-VI  (n=207 | n_pos=48 | n_neg=159)     | 64.6% [50.0, 77.1]           | 22.6% [16.4, 29.6]           | 32.4% [26.6, 38.2]          
+ALL (expert-labelled tones)  (n=656 | n_pos=171 | n_neg=485) | 81.9% [75.4, 87.7]           | 24.1% [20.4, 27.8]           | 39.2% [36.0, 42.4]          
+
+  Binary ROC-AUC  (n=656 | n_pos=171 | n_neg=485)   0.5849% [0.5360, 0.6343]
+
+  Sensitivity contrasts (95% CI, stratified percentile bootstrap; n_pos = raw malignant counts per group):
+  contrast                         diff                95% CI  n_pos_a  n_pos_b
+  FST V-VI - FST I-II            -21.1% [ -37.8,   -4.7]       48       49
+  FST V-VI - FST III-IV          -26.0% [ -41.2,  -10.6]       48       74
+  FST III-IV - FST I-II            4.8% [  -7.4,   16.4]       74       49
+
+  Equalized-odds gap (sensitivity, max-min over groups [0, 2, 4]):  25.96%  [12.67, 41.80]   target < 5%
+  wrote C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\audit\audit_step0_1_report.json
+  wrote C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\audit\test_fairness_ci.csv
+  wrote C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\audit\ddi_fairness_ci.csv
+  wrote C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\audit\group_contrasts_ci.csv
+
+============================================================================================================
+AUDIT COMPLETE in 138.9s
+  Outputs in C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\audit/: audit_step0_1_report.json, test_fairness_ci.csv, ddi_fairness_ci.csv, group_contrasts_ci.csv
+  Findings: 3 BLOCKER / 1 WARN — resolve before quoting any number in the paper
+============================================================================================================

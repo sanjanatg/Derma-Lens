@@ -1,8 +1,18 @@
 """
-quantize_tflite.py — ONNX → TFLite INT8 conversion for FairDermNet (8-class)
+quantize_tflite.py — ONNX → TFLite conversion for FairDermNet (8-class)
 ==============================================================================
 Pipeline:
-    ONNX (opset 17) → TF SavedModel (via onnx-tf) → TFLite INT8 (quantized)
+    ONNX (opset 11) → TF SavedModel (via onnx-tf) → TFLite (quantized)
+
+Quantization mode (shipped default): dynamic-range — int8 weights, float32
+activations. Full INT8 (weights AND activations quantized) is NOT used for
+this model: the GeM pooling power op (x^p, learned p≈2.88) produces
+intermediates spanning ~±1.7M, so the INT8 activation scale is ~13615 and
+precision is destroyed (validated: 3% top-1 match vs PyTorch). Dynamic-range
+keeps activations in float32, so the power op is exact, and validated real-
+image performance is statistically identical to PyTorch (sensitivity 89.1% vs
+90.9% at the clinical threshold, 150 images). Model size stays ≈5.5 MB since
+weights dominate.
 
 Requirements:
     pip install onnx-tf tensorflow-cpu==2.13.0
@@ -32,20 +42,31 @@ def convert_onnx_to_tflite(
     num_calibration_samples: int = 200,
     quantize_int8: bool = True,
     input_shape: tuple = (1, 3, 224, 224),
+    calibration_images: Optional[list] = None,
+    full_int8: bool = False,
 ) -> Path:
     """
-    Convert an ONNX model to TFLite INT8.
+    Convert an ONNX model to TFLite (quantized by default).
 
     Strategy:
       1. onnx-tf converts ONNX → TF SavedModel
-      2. tf.lite.TFLiteConverter with INT8 quantization converts SavedModel → TFLite
+      2. tf.lite.TFLiteConverter converts SavedModel → TFLite
 
     Args:
         onnx_path:                Path to the .onnx file.
         output_path:              Destination .tflite path.
-        num_calibration_samples:  Samples used for INT8 calibration.
-        quantize_int8:            If False, export float32 TFLite (larger but no calibration).
+        num_calibration_samples:  Samples used for full-INT8 activation calibration.
+        quantize_int8:            If True, quantize weights to int8 (dynamic-range:
+                                  activations stay float32). If False, float32 model.
         input_shape:              Model input shape (N, C, H, W).
+        calibration_images:       Optional list of image file paths used as the INT8
+                                  representative dataset (full_int8 only). Real images
+                                  give accurate activation ranges; random noise (the
+                                  fallback) produces catastrophically wrong quantization.
+        full_int8:                If True, also quantize activations to int8 (requires
+                                  a representative dataset). Do NOT use for FairDermNet:
+                                  the GeM pooling power op makes full INT8 catastrophically
+                                  inaccurate (see module docstring).
 
     Returns:
         Path to the .tflite file.
@@ -72,23 +93,48 @@ def convert_onnx_to_tflite(
     converter = tf.lite.TFLiteConverter.from_saved_model(str(saved_model_dir))
 
     if quantize_int8:
-        converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
-        converter.inference_input_type  = tf.float32   # keep float input for convenience
-        converter.inference_output_type = tf.float32   # keep float output
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]  # int8 weights
 
-        # Representative dataset — synthetic ImageNet-normalised images
-        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 3, 1, 1)
-        std  = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 3, 1, 1)
+        if full_int8:
+            # Full INT8 (activations quantized too). Requires a representative
+            # dataset. Known-broken for FairDermNet — see module docstring.
+            converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+            converter.inference_input_type  = tf.float32   # keep float input for convenience
+            converter.inference_output_type = tf.float32   # keep float output
 
-        def _representative_dataset():
-            rng = np.random.default_rng(42)
-            for _ in range(num_calibration_samples):
-                raw  = rng.random((1, 3, 224, 224), dtype=np.float32)
-                norm = (raw - mean) / std
-                yield [norm.astype(np.float32)]
+            # Representative dataset — real images when provided, else synthetic noise
+            mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 3, 1, 1)
+            std  = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 3, 1, 1)
 
-        converter.representative_dataset = _representative_dataset
+            def _preprocess_calibration(paths: list) -> list:
+                """Resize + ImageNet-normalise real images, same as validation."""
+                from PIL import Image
+                imgs = []
+                for p in paths[:num_calibration_samples]:
+                    pil = Image.open(p).convert("RGB").resize((224, 224))
+                    arr = np.array(pil, dtype=np.float32) / 255.0   # [224, 224, 3]
+                    arr = arr.transpose(2, 0, 1)[None]              # [1, 3, 224, 224]
+                    imgs.append(((arr - mean) / std).astype(np.float32))
+                return imgs
+
+            calib_images = (
+                _preprocess_calibration(calibration_images)
+                if calibration_images
+                else None
+            )
+
+            def _representative_dataset():
+                if calib_images is not None:
+                    for img in calib_images:
+                        yield [img]
+                    return
+                rng = np.random.default_rng(42)
+                for _ in range(num_calibration_samples):
+                    raw  = rng.random((1, 3, 224, 224), dtype=np.float32)
+                    norm = (raw - mean) / std
+                    yield [norm.astype(np.float32)]
+
+            converter.representative_dataset = _representative_dataset
 
     tflite_model = converter.convert()
     output_path.write_bytes(tflite_model)
@@ -97,6 +143,9 @@ def convert_onnx_to_tflite(
     print(f"[Export] ✓ TFLite written → {output_path}  ({mb:.2f} MB)")
     if mb > 6.0:
         print(f"[Export] ⚠ Size {mb:.2f} MB exceeds 6 MB target.")
+    if not full_int8 and quantize_int8:
+        print("[Export]   Mode: dynamic-range quantization (int8 weights, float32 activations).")
+        print("[Export]   Full INT8 is avoided — GeM power op is unquantizable (see docstring).")
 
     return output_path
 

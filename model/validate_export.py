@@ -29,7 +29,7 @@ import torch.nn.functional as F
 
 # ── Project root ─────────────────────────────────────────────────────────────
 SCRIPT_DIR   = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent
+PROJECT_ROOT = SCRIPT_DIR
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -68,6 +68,36 @@ def make_synthetic_batch(n: int, seed: int = 42) -> np.ndarray:
     rng = np.random.default_rng(seed)
     raw = rng.random((n, 3, 224, 224), dtype=np.float32)
     return (raw - IMAGENET_MEAN) / IMAGENET_STD
+
+
+def load_real_test_inputs(csv_path: Path, n: int = 100, seed: int = 0) -> np.ndarray | None:
+    """
+    Sample up to n real test images from a split CSV (validation-identical preprocessing).
+
+    Returns None if the CSV (or any image in it) cannot be loaded. Real images are
+    the meaningful evaluation regime for FairDermNet: on synthetic noise the GeM
+    power op (x.clamp(eps).pow(p)) collapses the activations, PyTorch outputs
+    near-uniform probabilities, and argmax comparisons become meaningless.
+    """
+    if not csv_path.exists():
+        return None
+    try:
+        import pandas as pd
+        from PIL import Image
+        df = pd.read_csv(csv_path)
+        paths = [p for p in df["image_path"].tolist() if Path(p).exists()]
+        if not paths:
+            return None
+        rng = np.random.default_rng(seed)
+        idxs = rng.choice(len(paths), size=min(n, len(paths)), replace=False)
+        imgs = [
+            preprocess_numpy(np.array(Image.open(paths[i]).convert("RGB")))
+            for i in idxs
+        ]
+        return np.concatenate(imgs, axis=0)
+    except Exception as e:
+        print(f"[Validate] ⚠ Could not load real test images ({e}) — using synthetic.")
+        return None
 
 
 # ── PyTorch runner ────────────────────────────────────────────────────────────
@@ -173,7 +203,7 @@ def compare(pt_probs: np.ndarray, other_probs: np.ndarray, other_name: str) -> d
     print(f"  Mal/Ben decision match: {decision_match:.1f}%")
 
     if top1_match < 95:
-        print(f"  ⚠ Top-1 match below 95% — check INT8 quantization quality.")
+        print(f"  ⚠ Top-1 match below 95% — check quantization quality / near-tie flips.")
     if max_linf > 0.05:
         print(f"  ⚠ Max probability drift > 0.05 — check calibration dataset size.")
     if decision_match < 99:
@@ -186,8 +216,8 @@ def compare(pt_probs: np.ndarray, other_probs: np.ndarray, other_name: str) -> d
 
 def main():
     parser = argparse.ArgumentParser(description="Validate TFLite export vs PyTorch")
-    parser.add_argument("--n",      type=int, default=100, help="Number of synthetic test samples")
-    parser.add_argument("--images", type=str, default=None, help="Directory of real test images (optional)")
+    parser.add_argument("--n",      type=int, default=100, help="Number of test samples")
+    parser.add_argument("--images", type=str, default=None, help="Directory of real test images (optional, overrides split_test.csv)")
     parser.add_argument("--no-tflite", action="store_true", help="Skip TFLite comparison (use ONNX only)")
     args = parser.parse_args()
 
@@ -204,36 +234,51 @@ def main():
     pt_model = FairDermNet.from_checkpoint(CHECKPOINT_PATH, num_classes=NUM_CLASSES)
     pt_model.eval()
 
-    # ── Synthetic inputs ──────────────────────────────────────────────────────
-    print(f"[Validate] Generating {args.n} synthetic test inputs ...")
-    synth_inputs = make_synthetic_batch(args.n).astype(np.float32)
-
-    # ── Real images (optional) ────────────────────────────────────────────────
-    real_inputs = None
+    # ── Test inputs: prefer real images, fall back to synthetic ──────────────
+    eval_inputs = None
+    eval_label = "real images"
     if args.images:
         from PIL import Image
         img_dir = Path(args.images)
         img_paths = list(img_dir.glob("*.jpg")) + list(img_dir.glob("*.png"))
         if img_paths:
             print(f"[Validate] Found {len(img_paths)} real images in {img_dir}")
-            real_inputs = np.concatenate([
+            eval_inputs = np.concatenate([
                 preprocess_numpy(np.array(Image.open(p).convert("RGB")))
-                for p in img_paths[:50]
+                for p in img_paths[:args.n]
             ], axis=0)
         else:
             print(f"[Validate] ⚠ No images found in {img_dir}")
+    else:
+        eval_inputs = load_real_test_inputs(PROJECT_ROOT / "datasets" / "split_test.csv", args.n)
+
+    if eval_inputs is None:
+        eval_label = "synthetic noise"
+        print(f"[Validate] ⚠ No real test images available — falling back to {eval_label}.")
+        print("           Synthetic noise is a degenerate regime for FairDermNet (the GeM power")
+        print("           op collapses activations → near-uniform probs). Prefer real images.")
+        eval_inputs = make_synthetic_batch(args.n).astype(np.float32)
+
+    print(f"[Validate] Running inference on {args.n} {eval_label} inputs ...")
 
     # ── Run PyTorch ───────────────────────────────────────────────────────────
     print("[Validate] Running PyTorch inference ...")
-    pt_probs_synth = run_pytorch(pt_model, synth_inputs)
+    pt_probs = run_pytorch(pt_model, eval_inputs)
+
+    # Regime sanity check: if PyTorch itself is uncertain on these inputs
+    # (mean max prob low), argmax comparisons are meaningless.
+    mean_max = pt_probs.max(axis=1).mean()
+    if mean_max < 0.4:
+        print(f"[Validate] ⚠ PyTorch mean max-probability on {eval_label} is {mean_max:.3f} "
+              "— inputs are in a degenerate regime; top-1 comparisons unreliable.")
 
     all_results = []
 
     # ── ONNX comparison ───────────────────────────────────────────────────────
     if ONNX_PATH.exists():
         print("[Validate] Running ONNX Runtime inference ...")
-        onnx_probs = run_onnx(ONNX_PATH, synth_inputs)
-        all_results.append(compare(pt_probs_synth, onnx_probs, "ONNX Runtime"))
+        onnx_probs = run_onnx(ONNX_PATH, eval_inputs)
+        all_results.append(compare(pt_probs, onnx_probs, "ONNX Runtime"))
     else:
         print(f"[Validate] ⚠ ONNX not found at {ONNX_PATH} — skipping ONNX comparison.")
 
@@ -242,14 +287,8 @@ def main():
         if TFLITE_PATH.exists():
             print("[Validate] Running TFLite interpreter inference ...")
             try:
-                tflite_probs = run_tflite(TFLITE_PATH, synth_inputs)
-                all_results.append(compare(pt_probs_synth, tflite_probs, "TFLite INT8"))
-
-                if real_inputs is not None:
-                    pt_probs_real     = run_pytorch(pt_model, real_inputs)
-                    tflite_probs_real = run_tflite(TFLITE_PATH, real_inputs)
-                    all_results.append(compare(pt_probs_real, tflite_probs_real, "TFLite INT8 (real images)"))
-
+                tflite_probs = run_tflite(TFLITE_PATH, eval_inputs)
+                all_results.append(compare(pt_probs, tflite_probs, "TFLite INT8"))
             except RuntimeError as e:
                 print(f"[Validate] ⚠ TFLite comparison skipped: {e}")
         else:

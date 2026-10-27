@@ -1,0 +1,404 @@
+{
+  "generated": "2026-09-06T10:42:27",
+  "seed": 42,
+  "n_boot": 2000,
+  "conf": 0.95,
+  "step0_findings": [
+    {
+      "severity": "WARN",
+      "code": "S0.2-missing-artifact",
+      "detail": "test_fairness_report.txt not found"
+    },
+    {
+      "severity": "INFO",
+      "code": "S0.4-remap-guard-present",
+      "detail": "notebook remap cell is retired: legacy-indices guard in place (raises RuntimeError if master_dataset.csv is back in the pre-fix 9-class layout)"
+    }
+  ],
+  "step1": {
+    "test": {
+      "groups": [
+        {
+          "panel": "test",
+          "group": "FST I",
+          "group_key": "0",
+          "n": 32,
+          "n_pos": 20,
+          "n_neg": 12,
+          "sensitivity": 1.0,
+          "sens_ci_low": 1.0,
+          "sens_ci_high": 1.0,
+          "specificity": 0.9166666666666666,
+          "spec_ci_low": 0.5000826200527931,
+          "spec_ci_high": 1.0,
+          "accuracy": 0.96875,
+          "acc_ci_low": 0.8125079936789371,
+          "acc_ci_high": 0.96875,
+          "ci_method": "BCa bootstrap (2000 reps, stratified by label)"
+        },
+        {
+          "panel": "test",
+          "group": "FST II",
+          "group_key": "1",
+          "n": 3743,
+          "n_pos": 1275,
+          "n_neg": 2468,
+          "sensitivity": 0.8117647058823529,
+          "sens_ci_low": 0.788235294117647,
+          "sens_ci_high": 0.8305882352941176,
+          "specificity": 0.8780388978930308,
+          "spec_ci_low": 0.8646677471636953,
+          "spec_ci_high": 0.8897893030794165,
+          "accuracy": 0.8554635319262623,
+          "acc_ci_low": 0.8437668551919644,
+          "acc_ci_high": 0.8656158161902218,
+          "ci_method": "BCa bootstrap (2000 reps, stratified by label)"
+        },
+        {
+          "panel": "test",
+          "group": "FST III",
+          "group_key": "2",
+          "n": 1839,
+          "n_pos": 653,
+          "n_neg": 1186,
+          "sensitivity": 0.8468606431852986,
+          "sens_ci_low": 0.8162327718223583,
+          "sens_ci_high": 0.8713629402756509,
+          "specificity": 0.8650927487352446,
+          "spec_ci_low": 0.8452246492991816,
+          "spec_ci_high": 0.8836424957841484,
+          "accuracy": 0.8586188145731376,
+          "acc_ci_low": 0.842305600870038,
+          "acc_ci_high": 0.8733007069059271,
+          "ci_method": "BCa bootstrap (2000 reps, stratified by label)"
+        },
+        {
+          "panel": "test",
+          "group": "FST IV",
+          "group_key": "3",
+          "n": 30,
+          "n_pos": 16,
+          "n_neg": 14,
+          "sensitivity": 0.9375,
+          "sens_ci_low": 0.6875,
+          "sens_ci_high": 1.0,
+          "specificity": 0.7142857142857143,
+          "spec_ci_low": 0.35714285714285715,
+          "spec_ci_high": 0.8571428571428571,
+          "accuracy": 0.8333333333333334,
+          "acc_ci_low": 0.6333333333333333,
+          "acc_ci_high": 0.9,
+          "ci_method": "BCa bootstrap (2000 reps, stratified by label)"
+        },
+        {
+          "panel": "test",
+          "group": "FST V",
+          "group_key": "4",
+          "n": 3,
+          "n_pos": 3,
+          "n_neg": 0,
+          "sensitivity": 0.6666666666666666,
+          "sens_ci_low": null,
+          "sens_ci_high": null,
+          "specificity": NaN,
+          "spec_ci_low": null,
+          "spec_ci_high": null,
+          "accuracy": 0.6666666666666666,
+          "acc_ci_low": null,
+          "acc_ci_high": null,
+          "ci_method": "degenerate (empty class) \u2014 CI undefined"
+        },
+        {
+          "panel": "test",
+          "group": "FST VI",
+          "group_key": "5",
+          "n": 0,
+          "n_pos": 0,
+          "n_neg": 0,
+          "sensitivity": NaN,
+          "sens_ci_low": null,
+          "sens_ci_high": null,
+          "specificity": NaN,
+          "spec_ci_low": null,
+          "spec_ci_high": null,
+          "accuracy": NaN,
+          "acc_ci_low": null,
+          "acc_ci_high": null,
+          "ci_method": "degenerate (empty class) \u2014 CI undefined"
+        },
+        {
+          "panel": "test",
+          "group": "ALL (ITA-estimated tones)",
+          "group_key": "overall",
+          "n": 5647,
+          "n_pos": 1967,
+          "n_neg": 3680,
+          "sensitivity": 0.826131164209456,
+          "sens_ci_low": 0.8088459583121504,
+          "sens_ci_high": 0.8418912048805287,
+          "specificity": 0.8733695652173913,
+          "spec_ci_low": 0.8622282608695652,
+          "spec_ci_high": 0.8834239130434782,
+          "accuracy": 0.8569151761997521,
+          "acc_ci_low": 0.8477067469452807,
+          "acc_ci_high": 0.8657694350982823,
+          "ci_method": "BCa bootstrap (2000 reps, stratified by label)"
+        }
+      ],
+      "contrasts": [
+        {
+          "panel": "test",
+          "contrast": "1 - 0",
+          "sens_a": 0.8117647058823529,
+          "sens_b": 1.0,
+          "diff": -0.18823529411764706,
+          "ci_low": -0.2094117647058824,
+          "ci_high": -0.16627450980392156,
+          "n_a": 1275,
+          "n_b": 20,
+          "eo_gap_point": 0.33333333333333337,
+          "eo_gap_ci_low": 0.1748938834339249,
+          "eo_gap_ci_high": 1.0,
+          "eo_groups": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "panel": "test",
+          "contrast": "2 - 0",
+          "sens_a": 0.8468606431852986,
+          "sens_b": 1.0,
+          "diff": -0.15313935681470137,
+          "ci_low": -0.18070444104134764,
+          "ci_high": -0.1271056661562021,
+          "n_a": 653,
+          "n_b": 20,
+          "eo_gap_point": 0.33333333333333337,
+          "eo_gap_ci_low": 0.1748938834339249,
+          "eo_gap_ci_high": 1.0,
+          "eo_groups": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "panel": "test",
+          "contrast": "3 - 0",
+          "sens_a": 0.9375,
+          "sens_b": 1.0,
+          "diff": -0.0625,
+          "ci_low": -0.1875,
+          "ci_high": 0.0,
+          "n_a": 16,
+          "n_b": 20,
+          "eo_gap_point": 0.33333333333333337,
+          "eo_gap_ci_low": 0.1748938834339249,
+          "eo_gap_ci_high": 1.0,
+          "eo_groups": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "panel": "test",
+          "contrast": "4 - 0",
+          "sens_a": 0.6666666666666666,
+          "sens_b": 1.0,
+          "diff": -0.33333333333333337,
+          "ci_low": -1.0,
+          "ci_high": 0.0,
+          "n_a": 3,
+          "n_b": 20,
+          "eo_gap_point": 0.33333333333333337,
+          "eo_gap_ci_low": 0.1748938834339249,
+          "eo_gap_ci_high": 1.0,
+          "eo_groups": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ],
+      "auc": {
+        "n": 5647,
+        "n_pos": 1967,
+        "n_neg": 3680,
+        "point": 0.9238738091554121,
+        "ci_low": 0.9165254394610094,
+        "ci_high": 0.9314181689654271,
+        "method": "BCa bootstrap (2000 reps, stratified by label)"
+      },
+      "eo_gap": {
+        "point": 0.33333333333333337,
+        "ci_low": 0.1748938834339249,
+        "ci_high": 1.0
+      }
+    },
+    "ddi": {
+      "groups": [
+        {
+          "panel": "ddi",
+          "group": "FST I-II",
+          "group_key": "0",
+          "n": 208,
+          "n_pos": 49,
+          "n_neg": 159,
+          "sensitivity": 0.8571428571428571,
+          "sens_ci_low": 0.7142857142857143,
+          "sens_ci_high": 0.9183673469387755,
+          "specificity": 0.22012578616352202,
+          "spec_ci_low": 0.15723270440251572,
+          "spec_ci_high": 0.2890106555161991,
+          "accuracy": 0.3701923076923077,
+          "acc_ci_low": 0.3125,
+          "acc_ci_high": 0.4230769230769231,
+          "ci_method": "BCa bootstrap (2000 reps, stratified by label)"
+        },
+        {
+          "panel": "ddi",
+          "group": "FST III-IV",
+          "group_key": "2",
+          "n": 241,
+          "n_pos": 74,
+          "n_neg": 167,
+          "sensitivity": 0.9054054054054054,
+          "sens_ci_low": 0.8108108108108109,
+          "sens_ci_high": 0.9459459459459459,
+          "specificity": 0.2754491017964072,
+          "spec_ci_low": 0.20958083832335328,
+          "spec_ci_high": 0.3413173652694611,
+          "accuracy": 0.46887966804979253,
+          "acc_ci_low": 0.41250029424603796,
+          "acc_ci_high": 0.5145228215767634,
+          "ci_method": "BCa bootstrap (2000 reps, stratified by label)"
+        },
+        {
+          "panel": "ddi",
+          "group": "FST V-VI",
+          "group_key": "4",
+          "n": 207,
+          "n_pos": 48,
+          "n_neg": 159,
+          "sensitivity": 0.6458333333333334,
+          "sens_ci_low": 0.4791666666666667,
+          "sens_ci_high": 0.75,
+          "specificity": 0.22641509433962265,
+          "spec_ci_low": 0.15723270440251572,
+          "spec_ci_high": 0.2893081761006289,
+          "accuracy": 0.32367149758454106,
+          "acc_ci_low": 0.26570048309178745,
+          "acc_ci_high": 0.38164251207729466,
+          "ci_method": "BCa bootstrap (2000 reps, stratified by label)"
+        },
+        {
+          "panel": "ddi",
+          "group": "ALL (expert-labelled tones)",
+          "group_key": "overall",
+          "n": 656,
+          "n_pos": 171,
+          "n_neg": 485,
+          "sensitivity": 0.8187134502923976,
+          "sens_ci_low": 0.7485380116959064,
+          "sens_ci_high": 0.8654970760233918,
+          "specificity": 0.24123711340206186,
+          "spec_ci_low": 0.2020618556701031,
+          "spec_ci_high": 0.27819328264955995,
+          "accuracy": 0.39176829268292684,
+          "acc_ci_low": 0.35823170731707316,
+          "acc_ci_high": 0.4222560975609756,
+          "ci_method": "BCa bootstrap (2000 reps, stratified by label)"
+        }
+      ],
+      "contrasts": [
+        {
+          "panel": "ddi",
+          "contrast": "4 - 0",
+          "sens_a": 0.6458333333333334,
+          "sens_b": 0.8571428571428571,
+          "diff": -0.21130952380952372,
+          "ci_low": -0.3784226190476191,
+          "ci_high": -0.04676870748299311,
+          "n_a": 48,
+          "n_b": 49,
+          "eo_gap_point": 0.259572072072072,
+          "eo_gap_ci_low": 0.1267006802721089,
+          "eo_gap_ci_high": 0.41795280612244895,
+          "eo_groups": [
+            0,
+            2,
+            4
+          ]
+        },
+        {
+          "panel": "ddi",
+          "contrast": "4 - 2",
+          "sens_a": 0.6458333333333334,
+          "sens_b": 0.9054054054054054,
+          "diff": -0.259572072072072,
+          "ci_low": -0.4116272522522522,
+          "ci_high": -0.10629222972973047,
+          "n_a": 48,
+          "n_b": 74,
+          "eo_gap_point": 0.259572072072072,
+          "eo_gap_ci_low": 0.1267006802721089,
+          "eo_gap_ci_high": 0.41795280612244895,
+          "eo_groups": [
+            0,
+            2,
+            4
+          ]
+        },
+        {
+          "panel": "ddi",
+          "contrast": "2 - 0",
+          "sens_a": 0.9054054054054054,
+          "sens_b": 0.8571428571428571,
+          "diff": 0.04826254826254828,
+          "ci_low": -0.07364175399889683,
+          "ci_high": 0.16354109211252066,
+          "n_a": 74,
+          "n_b": 49,
+          "eo_gap_point": 0.259572072072072,
+          "eo_gap_ci_low": 0.1267006802721089,
+          "eo_gap_ci_high": 0.41795280612244895,
+          "eo_groups": [
+            0,
+            2,
+            4
+          ]
+        }
+      ],
+      "auc": {
+        "n": 656,
+        "n_pos": 171,
+        "n_neg": 485,
+        "point": 0.584867667450413,
+        "ci_low": 0.5354783453857404,
+        "ci_high": 0.6339946483121225,
+        "method": "BCa bootstrap (2000 reps, stratified by label)"
+      },
+      "eo_gap": {
+        "point": 0.259572072072072,
+        "ci_low": 0.1267006802721089,
+        "ci_high": 0.41795280612244895
+      }
+    }
+  },
+  "notes": {
+    "tone_provenance": "test-panel tones are ITA-estimated (not expert-labelled); DDI tones are expert-labelled but coarse (I-II / III-IV / V-VI)",
+    "n_is_raw": "n, n_pos, n_neg are raw per-group counts; the bootstrap is stratified by true label, so they are exact in every resample",
+    "point_estimate_parity": "same formulas as notebook Cells 9/9b/9c (tp/(tp+fn+1e-8) etc.)"
+  }
+}

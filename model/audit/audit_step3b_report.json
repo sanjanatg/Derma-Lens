@@ -1,0 +1,287 @@
+{
+  "step": "3b \u2014 domain-vs-tone verdict, Grad-CAM, post-hoc AK fix",
+  "generated": "2026-09-06T15:39:35",
+  "seed": 42,
+  "n_boot": 2000,
+  "cache_drift": 1.1920928955078125e-07,
+  "step0_findings": [
+    {
+      "severity": "INFO",
+      "code": "S0.4-remap-guard-present",
+      "detail": "notebook remap cell is retired: legacy-indices guard in place (raises RuntimeError if master_dataset.csv is back in the pre-fix 9-class layout)"
+    }
+  ],
+  "domain_vs_tone": [
+    {
+      "evidence": "ddi_internal_by_group",
+      "group": "FST I-II",
+      "n_benign": 159,
+      "ak_mean": 0.44026018251077736,
+      "ak_q90": 0.8769665479660037,
+      "mal_sum_mean": 0.712060971147126
+    },
+    {
+      "evidence": "ddi_internal_by_group",
+      "group": "FST III-IV",
+      "n_benign": 167,
+      "ak_mean": 0.3177336684503442,
+      "ak_q90": 0.7278409242630006,
+      "mal_sum_mean": 0.6503692373081283
+    },
+    {
+      "evidence": "ddi_internal_by_group",
+      "group": "FST V-VI",
+      "n_benign": 159,
+      "ak_mean": 0.37129028267432124,
+      "ak_q90": 0.7794195771217347,
+      "mal_sum_mean": 0.6685692523518261
+    },
+    {
+      "evidence": "tone_matched_I-II",
+      "group": "FST I-II",
+      "n_benign": 159,
+      "ak_mean": 0.44026018251077736,
+      "ak_q90": 0.8769665479660037,
+      "mal_sum_mean": 0.712060971147126
+    },
+    {
+      "evidence": "tone_matched_I-II_test",
+      "group": "FST I-II",
+      "n_benign": 2480,
+      "ak_mean": 0.04298063938742777,
+      "ak_q90": 0.06729263141751288,
+      "mal_sum_mean": 0.281830925842588
+    },
+    {
+      "evidence": "verdict",
+      "group": "",
+      "n_benign": 0,
+      "ak_mean": 0.39727954312334957,
+      "ak_q90": 0.12252651406043319,
+      "mal_sum_mean": 1.0
+    }
+  ],
+  "gradcam": [],
+  "gradcam_note": "mechanism claims require manual review of figures/gradcam_step3b/ overlays",
+  "ak_recalibration": [
+    {
+      "config": "baseline",
+      "group": "ALL",
+      "threshold": 0.2846,
+      "n": 330,
+      "n_pos": 86,
+      "n_neg": 244,
+      "sensitivity": 0.9651162790697675,
+      "sens_lo": NaN,
+      "sens_hi": NaN,
+      "specificity": 0.02459016393442623,
+      "spec_lo": NaN,
+      "spec_hi": NaN
+    },
+    {
+      "config": "ak_adj_lam0.25",
+      "group": "ALL",
+      "threshold": 0.2846,
+      "n": 330,
+      "n_pos": 86,
+      "n_neg": 244,
+      "sensitivity": 0.9767441860465116,
+      "sens_lo": NaN,
+      "sens_hi": NaN,
+      "specificity": 0.02459016393442623,
+      "spec_lo": NaN,
+      "spec_hi": NaN
+    }
+  ],
+  "ak_recalibration_summary": {
+    "lambda": 0.25,
+    "thr_adj": 0.2698,
+    "thr_base": 0.2846,
+    "safety": {
+      "baseline": {
+        "auc_iv": 0.9239629914548835,
+        "ak_recall_at_spec80": 0.9548611111111112,
+        "realized_spec": 0.8,
+        "n_ak": 288
+      },
+      "AK-adj lam*=0.25": {
+        "auc_iv": 0.9233558675728327,
+        "ak_recall_at_spec80": 0.9479166666666666,
+        "realized_spec": 0.8,
+        "n_ak": 288
+      },
+      "AK-adj lam=0.8 (sens.)": {
+        "auc_iv": 0.8885411593464979,
+        "ak_recall_at_spec80": 0.4444444444444444,
+        "realized_spec": 0.8,
+        "n_ak": 288
+      }
+    },
+    "sweep": [
+      {
+        "lambda": 0.0,
+        "tune_auc": 0.595850622406639,
+        "tune_spec": 0.05394190871369295,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.05,
+        "tune_auc": 0.6013668537954601,
+        "tune_spec": 0.05394190871369295,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.1,
+        "tune_auc": 0.6045887234561874,
+        "tune_spec": 0.05394190871369295,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.15,
+        "tune_auc": 0.6063461069074934,
+        "tune_spec": 0.05394190871369295,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.2,
+        "tune_auc": 0.6065413717354161,
+        "tune_spec": 0.05394190871369295,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.25,
+        "tune_auc": 0.6093727117402978,
+        "tune_spec": 0.05394190871369295,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.3,
+        "tune_auc": 0.607615328288992,
+        "tune_spec": 0.05394190871369295,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.35,
+        "tune_auc": 0.5995606541371736,
+        "tune_spec": 0.058091286307053944,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.4,
+        "tune_auc": 0.5925799365389309,
+        "tune_spec": 0.058091286307053944,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.45,
+        "tune_auc": 0.5838906516963631,
+        "tune_spec": 0.058091286307053944,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.5,
+        "tune_auc": 0.5762753234073712,
+        "tune_spec": 0.058091286307053944,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.55,
+        "tune_auc": 0.5648035147669026,
+        "tune_spec": 0.058091286307053944,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.6,
+        "tune_auc": 0.5570417378569685,
+        "tune_spec": 0.06224066390041494,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.65,
+        "tune_auc": 0.5543568464730291,
+        "tune_spec": 0.058091286307053944,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.7,
+        "tune_auc": 0.5518672199170125,
+        "tune_spec": 0.058091286307053944,
+        "tune_gap": 0.0563063063063064,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.75,
+        "tune_auc": 0.5447888699048083,
+        "tune_spec": 0.058091286307053944,
+        "tune_gap": 0.0563063063063064,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.8,
+        "tune_auc": 0.5408347571393702,
+        "tune_spec": 0.06224066390041494,
+        "tune_gap": 0.0563063063063064,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.85,
+        "tune_auc": 0.5353673419575299,
+        "tune_spec": 0.058091286307053944,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.9,
+        "tune_auc": 0.5310715157432268,
+        "tune_spec": 0.04149377593360996,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 0.95,
+        "tune_auc": 0.5263851598730779,
+        "tune_spec": 0.029045643153526972,
+        "tune_gap": 0.08333333333333337,
+        "tune_sens": 0.9529411764705882
+      },
+      {
+        "lambda": 1.0,
+        "tune_auc": 0.5237490846961191,
+        "tune_spec": 0.024896265560165973,
+        "tune_gap": 0.08108108108108103,
+        "tune_sens": 0.9529411764705882
+      }
+    ],
+    "eo_gap_eval": {
+      "baseline": {
+        "point": 0.125,
+        "lo": 0.0,
+        "hi": 0.25
+      },
+      "ak_adj_lam0.25": {
+        "point": 0.08333333333333337,
+        "lo": 0.0,
+        "hi": 0.20833333333333337
+      }
+    }
+  },
+  "notes": [
+    "lambda and thresholds fitted on the DDI tune half only (same (group x label) split as Step 2, seed 42).",
+    "CIs are (group x label)-stratified bootstrap; raw n in every row.",
+    "In-domain safety: test-panel AUC + AK-column recall at ~80% spec."
+  ]
+}

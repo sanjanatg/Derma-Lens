@@ -1,0 +1,1469 @@
+ 0 mark ec=-    lines=   2 | # DermaLens — Unified Training Notebook
+ 1 mark ec=-    lines=   1 | ### Cell 1 — GPU check + environment
+ 2 code ec=1    lines=  33 | # ── GPU health check ──────────────────────────────────────
+ 3 mark ec=-    lines=   1 | ### Cell 2 — All configurable parameters
+ 4 code ec=2    lines=  56 | # ================================================================
+ 5 mark ec=-    lines=   1 | ### Cell 3 — Import project packages (`model/`, `preprocessing/`, …)
+ 6 code ec=3    lines=  39 | # Load torch/torchvision BEFORE modifying sys.path to avoid circular import errors
+ 7 code ec=4    lines=  57 | import pandas as pd
+ 8 mark ec=-    lines=   1 | ### Cell 4 — Dataset loading (HAM10000 + ISIC2019 + PAD-UFES-20)
+ 9 code ec=5    lines= 280 | from model.class_taxonomy import (
+10 code ec=6    lines=   2 | pad_meta = pd.read_csv(r"C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\mod
+11 mark ec=-    lines=   1 | ### Cell 5 — Dataset class (RTX 3050 optimised)
+12 code ec=7    lines=  97 | # ── Cell 5 — Dataset splits + DataLoaders ─────────────────────────────────
+13 mark ec=-    lines=   1 | ### Cell 6 — Model initialisation with VRAM check
+14 code ec=8    lines=  52 | from model.class_taxonomy import compute_class_weights_from_counts, NUM_CLASSES, CLASS_NAM
+15 code ec=9    lines=  15 | import time
+16 code ec=10   lines=   5 | import importlib
+17 mark ec=-    lines=   1 | ### Cell 7 — Training loop (RTX 3050 optimised)
+18 code ec=11   lines= 145 | from sklearn.metrics import accuracy_score, balanced_accuracy_score
+19 mark ec=-    lines=   1 | ### Cell 8 — Training curves
+20 code ec=12   lines=  33 | import json
+21 mark ec=-    lines=   1 | ### Cell 9 — Test set evaluation + fairness report
+22 code ec=2    lines= 138 | import json
+23 mark ec=-    lines=   3 | ### Cell 9b — DDI Fairness Evaluation
+24 code ec=None lines= 146 | # Cell 9b — DDI Fairness Evaluation (held-out, expert-labelled)
+25 mark ec=-    lines=   3 | ### Cell 9c — Clinical Threshold Analysis
+26 code ec=None lines= 186 | # Cell 9c — Clinical Threshold Analysis (8-class compatible)
+27 mark ec=-    lines=   1 | ### Cell 10 — Fairness bar charts (per-Fitzpatrick group)
+28 code ec=None lines=  24 | FITZ_SHORT = ["I\n(fair)", "II", "III\n(med)", "IV", "V", "VI\n(dark)"]
+29 mark ec=-    lines=   1 | ### Cell 11 — GradCAM++ on 3 test samples
+30 code ec=None lines=  35 | torch.cuda.empty_cache(); gc.collect()
+31 mark ec=-    lines=   1 | ### Cell 12 — Export ONNX + TFLite
+32 code ec=None lines=  17 | from export.onnx_export import export_to_onnx
+33 mark ec=-    lines=   1 | ### Cell 13 — Final summary
+34 code ec=None lines=  33 | best_epoch = max(history, key=lambda h: h["val_balanced_accuracy"])
+35 code ec=None lines=   0 | (empty)
+===== CELL 2 (ec=1) =====
+# ── GPU health check ──────────────────────────────────────
+import torch, gc, subprocess, sys
+from pathlib import Path
+
+CUDA_AVAILABLE = torch.cuda.is_available()
+
+if not CUDA_AVAILABLE:
+    print("⚠ CUDA not available — using CPU. Training will be very slow.")
+    print("  Python used by this kernel:", sys.executable)
+    print("  PyTorch version:", torch.__version__)
+    print("  To enable GPU, run in a terminal (using the SAME Python as Jupyter):")
+    print("  ", sys.executable, "-m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121")
+    print("  Then: Kernel → Restart Kernel\n")
+else:
+    gpu_name  = torch.cuda.get_device_name(0)
+    vram_gb   = torch.cuda.get_device_properties(0).total_memory / 1e9
+    sm_major  = torch.cuda.get_device_properties(0).major
+    sm_minor  = torch.cuda.get_device_properties(0).minor
+
+    print(f"GPU:        {gpu_name}")
+    print(f"VRAM:       {vram_gb:.1f} GB")
+    print(f"SM version: {sm_major}.{sm_minor} (Ampere = 8.6)")
+    print(f"PyTorch:    {torch.__version__}")
+    print(f"CUDA:       {torch.version.cuda}")
+
+    if vram_gb < 5.5:
+        print(f"\n⚠ WARNING: Only {vram_gb:.1f} GB VRAM detected.")
+        print("  Reduce BATCH_SIZE to 8 in Cell 2 if OOM errors occur.")
+
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cudnn.benchmark = True
+    print("\n✓ CUDA optimisations enabled (TF32, cuDNN benchmark)")
+
+===== CELL 4 (ec=2) =====
+# ================================================================
+# ALL TRAINING PARAMETERS — edit only this cell
+# ================================================================
+from pathlib import Path
+import torch
+
+# ── Paths ────────────────────────────────────────────────────────
+def _find_project_root() -> Path:
+    """Repo root whether kernel cwd is project root or notebooks/."""
+    cwd = Path.cwd().resolve()
+    if (cwd / "model" / "fairdermet.py").is_file():
+        return cwd
+    if (cwd.parent / "model" / "fairdermet.py").is_file():
+        return cwd.parent
+    return Path(r"C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model")
+
+PROJECT_ROOT  = _find_project_root()
+DATASETS_DIR  = PROJECT_ROOT / "datasets"
+CHECKPOINTS   = PROJECT_ROOT / "checkpoints"
+FIGURES_DIR   = PROJECT_ROOT / "figures"
+
+# ── GPU config (RTX 3050 6 GB) ──────────────────────────────────
+DEVICE      = torch.device("cuda" if CUDA_AVAILABLE else "cpu")
+BATCH_SIZE  = 16
+GRAD_ACCUM  = 4
+NUM_WORKERS = 4
+PIN_MEMORY  = True
+USE_AMP     = True
+
+# ── Training ────────────────────────────────────────────────────
+EPOCHS         = 30
+LR             = 1e-4
+WEIGHT_DECAY   = 1e-4
+PATIENCE       = 7
+INPUT_SIZE     = 224
+
+# ── Loss weights ────────────────────────────────────────────────
+ALPHA = 1.0
+BETA  = 0.15
+GAMMA = 0.25
+
+# ── Dataset split ───────────────────────────────────────────────
+TRAIN_SPLIT = 0.70
+VAL_SPLIT   = 0.15
+TEST_SPLIT  = 0.15
+RANDOM_SEED = 42
+
+for d in [CHECKPOINTS, FIGURES_DIR]:
+    d.mkdir(parents=True, exist_ok=True)
+
+print("Configuration:")
+print(f"  Effective batch size: {BATCH_SIZE * GRAD_ACCUM}")
+print(f"  AMP (fp16):           {USE_AMP}")
+print(f"  Epochs:               {EPOCHS}")
+print(f"  Project root:         {PROJECT_ROOT}")
+print(f"  Classes:              9 (taxonomy loaded in Cell 3)")
+
+===== CELL 6 (ec=3) =====
+# Load torch/torchvision BEFORE modifying sys.path to avoid circular import errors
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+from torch.cuda.amp import GradScaler
+from torch.amp import autocast
+import torchvision
+
+import sys
+# Project root on path → `model`, `preprocessing`, `training`, `export`, …
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import cv2
+import yaml
+from tqdm.notebook import tqdm
+
+from model.fairdermet       import FairDermNet
+from model.loss_functions   import FairnessAwareLoss, compute_class_weights
+from model.class_taxonomy   import NUM_CLASSES, CLASS_NAMES  # safe here — after torch/tv
+from preprocessing          import get_train_transforms, get_val_transforms
+from preprocessing.skin_tone_estimation import estimate_ita, ita_to_fitzpatrick
+from preprocessing.lesion_segmentation  import segment_lesion
+from training.fairness_metrics import (
+    build_fairness_report, compute_epoch_metrics,
+    compute_fairness_metrics, FITZPATRICK_NAMES
+)
+from training.callbacks import EarlyStopping, ModelCheckpoint
+from explainability.gradcam_plus_plus import GradCAMPlusPlus, compute_abcde_scores
+
+print("✓ All DermaLens modules imported successfully.")
+print(f"  FairDermNet class:      {FairDermNet}")
+print(f"  FairnessAwareLoss:     {FairnessAwareLoss}")
+print(f"  Train transforms:       {get_train_transforms.__module__}")
+print(f"  Classes:                {NUM_CLASSES} — {', '.join(CLASS_NAMES)}")
+
+===== CELL 7 (ec=4) =====
+import pandas as pd
+import cv2
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm.notebook import tqdm
+import sys
+
+sys.path.insert(0, str(PROJECT_ROOT))
+from preprocessing.skin_tone_estimation import estimate_ita, ita_to_fitzpatrick
+from preprocessing.lesion_segmentation import segment_lesion
+
+# ── Fix class index mapping (Bowen's was never in data, indices shifted) ──
+# Current wrong mapping:  4=NV, 5=BKL, 6=DF, 7=VASC
+# Correct mapping:        5=NV, 6=BKL, 7=DF, 8=VASC  (4=BOD, empty)
+REMAP = {4: 5, 5: 6, 6: 7, 7: 8}
+
+master_path = DATASETS_DIR / "master_dataset.csv"
+df = pd.read_csv(master_path)
+df["skin_tone"] = df["skin_tone"].fillna(-1).astype(int)
+
+# Apply remap
+before = df["class_idx"].value_counts().sort_index()
+df["class_idx"] = df["class_idx"].apply(lambda x: REMAP.get(x, x))
+print("Class distribution after remap:")
+print(df["class_idx"].value_counts().sort_index())
+
+# ── Fill missing tones ────────────────────────────────────────────────────
+def estimate_tone(args):
+    idx, image_path, existing_tone = args
+    if existing_tone != -1:
+        return idx, existing_tone
+    try:
+        img = cv2.imread(image_path)
+        if img is None:
+            return idx, -1
+        mask = segment_lesion(img)
+        ita  = estimate_ita(img, mask)
+        if not np.isfinite(ita):
+            return idx, -1
+        return idx, ita_to_fitzpatrick(ita)
+    except Exception:
+        return idx, -1
+
+args = [(i, row["image_path"], int(row["skin_tone"])) for i, row in df.iterrows()]
+missing = sum(1 for _,_,t in args if t == -1)
+print(f"\nEstimating {missing:,} missing tones...")
+
+with ThreadPoolExecutor(max_workers=8) as executor:
+    futures = {executor.submit(estimate_tone, a): a for a in args}
+    for fut in tqdm(as_completed(futures), total=len(args), desc="ITA° estimation"):
+        idx, tone = fut.result()
+        df.at[idx, "skin_tone"] = tone
+
+df.to_csv(master_path, index=False)
+print(f"\n✓ Saved {master_path}")
+print("Tone distribution:")
+print(df["skin_tone"].value_counts().sort_index())
+
+===== CELL 9 (ec=5) =====
+from model.class_taxonomy import (
+    HAM10000_MAP, ISIC2019_MAP, PAD_UFES_MAP,
+    CLASS_NAMES, NUM_CLASSES, class_idx_to_binary
+)
+
+
+def build_ham10000_df(ham_dir):
+    """
+    Parse HAM10000 → 9-class labels.
+    Maps: mel→0, bcc→1, akiec→3, nv→5, bkl→6, df→7, vasc→8
+    Note: No SCC (2) or Bowen's (4) in HAM10000.
+    """
+    meta_files = list(ham_dir.glob("*.csv"))
+    meta_files = [f for f in meta_files if "metadata" in f.name.lower()] or meta_files
+    if not meta_files:
+        print(f"  ⚠ HAM10000: no CSV found in {ham_dir}")
+        return pd.DataFrame()
+
+    meta = pd.read_csv(meta_files[0])
+    rows = []
+    skipped_unknown = 0
+
+    for _, row in meta.iterrows():
+        img_id   = str(row.get("image_id", ""))
+        img_path = next(ham_dir.rglob(f"{img_id}.jpg"), None) or \
+                   next(ham_dir.rglob(f"{img_id}.jpeg"), None)
+        if img_path is None:
+            continue
+
+        dx        = str(row.get("dx", "")).lower().strip()
+        class_idx = HAM10000_MAP.get(dx, -1)
+        if class_idx == -1:
+            skipped_unknown += 1
+            continue
+
+        rows.append({
+            "image_path": str(img_path),
+            "class_idx":  class_idx,
+            "skin_tone":  -1,
+            "dataset":    "HAM10000",
+            "dx_raw":     dx,
+        })
+
+    result = pd.DataFrame(rows)
+    print(f"  HAM10000:    {len(result):6,} images | skipped unknown dx: {skipped_unknown}")
+    print(f"             class dist: { {CLASS_NAMES[i]: int((result['class_idx']==i).sum()) for i in sorted(result['class_idx'].unique())} }")
+    return result
+
+def build_isic2019_df(isic_dir):
+    """
+    Parse ISIC 2019 → 9-class labels.
+    One-hot encoded: reads which column == 1.0.
+    Maps: MEL→0, BCC→1, SCC→2, AK→3, NV→5, BKL→6, DF→7, VASC→8
+    """
+    gt_files = list(isic_dir.glob("*GroundTruth*.csv"))
+    if not gt_files:
+        print(f"  ⚠ ISIC2019: no GroundTruth CSV found in {isic_dir}")
+        return pd.DataFrame()
+
+    gt = pd.read_csv(gt_files[0])
+    valid_cols = [c for c in ISIC2019_MAP if c in gt.columns]
+    print(f"  ISIC2019: found columns {valid_cols}")
+
+    rows = []
+    skipped_img   = 0
+    skipped_label = 0
+    downsampled   = 0
+
+    for _, row in gt.iterrows():
+        img_id = str(row.get("image", ""))
+
+        img_path = next(isic_dir.rglob(f"{img_id}.jpg"), None)
+        if img_path is None:
+            img_path = next(isic_dir.rglob(f"{img_id}_downsampled.jpg"), None)
+            if img_path is not None:
+                downsampled += 1
+        if img_path is None:
+            skipped_img += 1
+            continue
+
+        class_idx = -1
+        for col in valid_cols:
+            if row.get(col, 0) == 1.0:
+                class_idx = ISIC2019_MAP[col]
+                break
+        if class_idx == -1:
+            skipped_label += 1
+            continue
+
+        rows.append({
+            "image_path": str(img_path),
+            "class_idx":  class_idx,
+            "skin_tone":  -1,
+            "dataset":    "ISIC2019",
+            "dx_raw":     col,
+        })
+
+    result = pd.DataFrame(rows)
+    print(f"  ISIC2019:    {len(result):6,} images | "
+          f"downsampled fallback: {downsampled} | "
+          f"missing file: {skipped_img} | unknown label: {skipped_label}")
+    print(f"             class dist: { {CLASS_NAMES[i]: int((result['class_idx']==i).sum()) for i in sorted(result['class_idx'].unique())} }")
+    return result
+
+
+def build_pad_ufes_df(pad_dir):
+    """
+    Parse PAD-UFES-20 → 9-class labels.
+    Maps: MEL→0, BCC→1, SCC→2, ACK→3, BOD→4, SEK→6
+    PAD-UFES-20 is the ONLY source of Bowen's disease (class 4).
+    """
+    meta_files = list(pad_dir.glob("*.csv"))
+    if not meta_files:
+        print(f"  ⚠ PAD-UFES-20: no CSV found in {pad_dir}")
+        return pd.DataFrame()
+
+    meta = pd.read_csv(meta_files[0])
+
+    fitz_col = next(
+        (c for c in ["fitzpatrick", "fitspatrick", "Fitzpatrick",
+                      "Fitspatrick", "fitzpatrick_scale"]
+         if c in meta.columns),
+        None
+    )
+    print(f"  PAD-UFES-20: Fitzpatrick column = '{fitz_col}' | "
+          f"columns: {list(meta.columns)}")
+
+    rows = []
+    skipped_img   = 0
+    skipped_label = 0
+
+    for _, row in meta.iterrows():
+        img_file = str(row.get("img_id", ""))
+        img_path = next(pad_dir.rglob(img_file), None)
+        if img_path is None:
+            skipped_img += 1
+            continue
+
+        diag      = str(row.get("diagnostic", "")).upper().strip()
+        class_idx = PAD_UFES_MAP.get(diag, -1)
+        if class_idx == -1:
+            skipped_label += 1
+            continue
+
+        fitz = -1
+        if fitz_col:
+            try:
+                fitz = int(float(row.get(fitz_col, -1))) - 1
+                if not (0 <= fitz <= 5):
+                    fitz = -1
+            except (ValueError, TypeError):
+                fitz = -1
+
+        rows.append({
+            "image_path": str(img_path),
+            "class_idx":  class_idx,
+            "skin_tone":  fitz,
+            "dataset":    "PAD_UFES_20",
+            "dx_raw":     diag,
+        })
+
+    result = pd.DataFrame(rows)
+    known_tones = (result["skin_tone"] >= 0).sum()
+    print(f"  PAD-UFES-20: {len(result):6,} images | "
+          f"known skin tones: {known_tones}/{len(result)} | "
+          f"skipped (no file): {skipped_img} | skipped (unknown dx): {skipped_label}")
+    if 4 in result["class_idx"].values:
+        print(f"             ✓ Bowen's disease (class 4): "
+              f"{int((result['class_idx']==4).sum())} images")
+    print(f"             class dist: { {CLASS_NAMES[i]: int((result['class_idx']==i).sum()) for i in sorted(result['class_idx'].unique())} }")
+    return result
+
+
+def build_ddi_df(ddi_dir):
+    """
+    Parse DDI Stanford — binary only (malignant/benign).
+    DDI has no class-level labels. class_idx = -1 (excluded from training).
+    Used only for fairness evaluation in Cell 9b.
+    """
+    meta_path = None
+    for candidate in [
+        ddi_dir / "ddi_metadata.csv",
+        ddi_dir / "ddidiversedermatologyimages" / "ddi_metadata.csv",
+        *list(ddi_dir.rglob("ddi_metadata.csv")),
+    ]:
+        if Path(candidate).exists():
+            meta_path = Path(candidate)
+            break
+
+    if meta_path is None:
+        print(f"  ⚠ DDI: ddi_metadata.csv not found under {ddi_dir}")
+        return pd.DataFrame()
+
+    df = pd.read_csv(meta_path)
+    TONE_MAP  = {12: 0, 34: 2, 56: 4}
+    GROUP_MAP = {12: "I-II", 34: "III-IV", 56: "V-VI"}
+
+    rows = []
+    for _, row in df.iterrows():
+        img_file = str(row.get("DDI_file", ""))
+        img_path = next(ddi_dir.rglob(img_file), None)
+        if img_path is None:
+            continue
+
+        mal_raw = row.get("malignant", False)
+        binary  = 1 if str(mal_raw).strip().lower() == "true" else 0
+
+        try:
+            tone_key = int(float(row.get("skin_tone", -1)))
+        except (ValueError, TypeError):
+            tone_key = -1
+        fitz_idx   = TONE_MAP.get(tone_key, -1)
+        fitz_group = GROUP_MAP.get(tone_key, "unknown")
+
+        rows.append({
+            "image_path":  str(img_path),
+            "class_idx":   -1,          # excluded from multi-class training
+            "skin_tone":   fitz_idx,
+            "fitz_group":  fitz_group,
+            "dataset":     "DDI",
+            "ddi_binary":  binary,      # used in Cell 9b fairness eval
+            "dx_raw":      "DDI_binary",
+        })
+
+    result = pd.DataFrame(rows)
+    print(f"  DDI:         {len(result):6,} images | "
+          f"malignant: {result['ddi_binary'].sum()} | "
+          f"skin tone dist: {result['fitz_group'].value_counts().to_dict()}")
+    print(f"             ← held out, NOT in training")
+    return result
+
+
+print("Loading datasets...")
+dfs_train = []
+ddi_df = None
+
+for fn, folder in [
+    (build_ham10000_df, DATASETS_DIR / "HAM10000"),
+    (build_isic2019_df, DATASETS_DIR / "ISIC2019"),
+    (build_pad_ufes_df, DATASETS_DIR / "PAD_UFES_20"),
+]:
+    if folder.exists():
+        df_part = fn(folder)
+        if len(df_part):
+            dfs_train.append(df_part)
+    else:
+        print(f"  ⚠ Folder not found: {folder}")
+
+ddi_folder = DATASETS_DIR / "DDI"
+if ddi_folder.exists():
+    ddi_df = build_ddi_df(ddi_folder)
+    if len(ddi_df):
+        print(f"  ✓ DDI loaded ({len(ddi_df)} images) — held out for fairness evaluation")
+else:
+    print(f"  ⚠ DDI folder not found — skipping DDI evaluation")
+
+assert dfs_train, "No training datasets found! Run 01_dataset_download.ipynb first."
+
+master_df = pd.concat(dfs_train, ignore_index=True)
+
+# Preserve previously estimated tones instead of wiping them. The build
+# functions above set skin_tone=-1 for HAM10000/ISIC2019; overwriting the
+# CSV here would silently discard the ITA estimates from the tone-estimation
+# cell (and previously re-introduced the all-unknown/Type-III collapse).
+master_path = DATASETS_DIR / "master_dataset.csv"
+if master_path.exists():
+    old = pd.read_csv(master_path)[["image_path", "skin_tone"]]
+    master_df = master_df.merge(old, on="image_path", how="left", suffixes=("", "_old"))
+    master_df["skin_tone"] = master_df["skin_tone_old"].fillna(master_df["skin_tone"]).astype(int)
+    master_df = master_df.drop(columns=["skin_tone_old"])
+master_df.to_csv(master_path, index=False)
+
+print(f"\nTraining pool: {len(master_df):,} images")
+print(f"Class distribution:")
+for i in range(NUM_CLASSES):
+    n = int((master_df["class_idx"] == i).sum())
+    if n > 0:
+        print(f"  [{i}] {CLASS_NAMES[i]:<30}: {n:,}")
+if ddi_df is not None:
+    print(f"\nDDI eval set:  {len(ddi_df):,} images (NOT in training)")
+
+===== CELL 10 (ec=6) =====
+pad_meta = pd.read_csv(r"C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\datasets\PAD_UFES_20\metadata.csv")
+print(pad_meta['diagnostic'].value_counts())
+
+===== CELL 12 (ec=7) =====
+# ── Cell 5 — Dataset splits + DataLoaders ─────────────────────────────────
+from sklearn.model_selection import train_test_split
+
+# Load master CSV (tones already pre-computed — no estimation needed)
+master_df = pd.read_csv(DATASETS_DIR / "master_dataset.csv")
+master_df["skin_tone"] = master_df["skin_tone"].fillna(-1).astype(int)
+master_df["strat_key"] = master_df["class_idx"].astype(str) + "_" + master_df["dataset"]
+
+train_val_df, test_df   = train_test_split(master_df, test_size=TEST_SPLIT,
+                                            stratify=master_df["strat_key"],
+                                            random_state=RANDOM_SEED)
+train_df, val_df        = train_test_split(train_val_df,
+                                            test_size=VAL_SPLIT / (1 - TEST_SPLIT),
+                                            stratify=train_val_df["strat_key"],
+                                            random_state=RANDOM_SEED)
+
+for split_df, name in [(train_df,"train"), (val_df,"val"), (test_df,"test")]:
+    split_df.to_csv(DATASETS_DIR / f"split_{name}.csv", index=False)
+
+print(f"Split: train={len(train_df):,} | val={len(val_df):,} | test={len(test_df):,}")
+
+
+class SkinLesionDataset(Dataset):
+    def __init__(self, csv_path, transform=None, exclude_class_minus1=True):
+        self.df        = pd.read_csv(csv_path).reset_index(drop=True)
+        self.transform = transform
+
+        if exclude_class_minus1:
+            before = len(self.df)
+            self.df = self.df[self.df["class_idx"] >= 0].reset_index(drop=True)
+            dropped = before - len(self.df)
+            if dropped:
+                print(f"  Excluded {dropped} DDI rows.")
+
+        # Preserve unknown tones (-1) instead of fabricating a class.
+        # Unknown tones are masked out of the Fitzpatrick aux loss and the
+        # fairness term (see FairnessAwareLoss.compute_fitzpatrick_loss).
+        # Never default to 2: that previously collapsed ~96% of training
+        # rows into Fitzpatrick III and starved the fairness signal.
+        self.df["skin_tone"] = self.df["skin_tone"].apply(
+            lambda t: int(t) if 0 <= int(t) <= 5 else -1
+        )
+
+        dist = {CLASS_NAMES[i]: int((self.df["class_idx"]==i).sum())
+                for i in range(NUM_CLASSES) if (self.df["class_idx"]==i).sum() > 0}
+        print(f"  Dataset: {len(self.df):,} samples")
+        for cls_name, count in dist.items():
+            print(f"    {cls_name:<30}: {count:,}")
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        row     = self.df.iloc[idx]
+        img     = cv2.imread(row["image_path"])
+        if img is None:
+            img = np.zeros((224, 224, 3), dtype=np.uint8)
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        if self.transform:
+            img_rgb = self.transform(image=img_rgb)["image"]
+
+        class_idx = int(row["class_idx"])
+        # Binary malignant/benign label.
+        #  - DDI eval rows (class_idx = -1): use the expert-labelled ddi_binary column.
+        #  - All other rows: derive from taxonomy (MALIGNANT_CLASSES = {0, 1, 2, 3}).
+        if "ddi_binary" in self.df.columns:
+            binary_label = int(row["ddi_binary"])
+        else:
+            binary_label = class_idx_to_binary(class_idx)
+        return {
+            "image":      img_rgb,
+            "class_idx":  torch.tensor(class_idx, dtype=torch.long),
+            "skin_tone":  torch.tensor(int(row["skin_tone"]), dtype=torch.long),
+            "risk_label":   torch.tensor(class_idx_to_binary(class_idx), dtype=torch.long),
+            "binary_label": torch.tensor(binary_label, dtype=torch.long),
+        }
+
+
+train_dataset = SkinLesionDataset(DATASETS_DIR / "split_train.csv",
+                                   transform=get_train_transforms(INPUT_SIZE))
+val_dataset   = SkinLesionDataset(DATASETS_DIR / "split_val.csv",
+                                   transform=get_val_transforms(INPUT_SIZE))
+test_dataset  = SkinLesionDataset(DATASETS_DIR / "split_test.csv",
+                                   transform=get_val_transforms(INPUT_SIZE))
+
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
+                          num_workers=0, pin_memory=False, drop_last=True)
+val_loader   = DataLoader(val_dataset,   batch_size=BATCH_SIZE, shuffle=False,
+                          num_workers=0, pin_memory=False)
+test_loader  = DataLoader(test_dataset,  batch_size=BATCH_SIZE, shuffle=False,
+                          num_workers=0, pin_memory=False)
+
+batch = next(iter(train_loader))
+print(f"\nBatch shape: {batch['image'].shape}  (expect [16, 3, 224, 224])")
+print(f"Skin tones:  {batch['skin_tone'].tolist()[:8]}")
+print(f"Classes:     {batch['class_idx'].tolist()[:8]}")
+
+===== CELL 14 (ec=8) =====
+from model.class_taxonomy import compute_class_weights_from_counts, NUM_CLASSES, CLASS_NAMES as _CN
+
+# Compute class weights from actual data counts
+actual_counts = {
+    i: int((master_df["class_idx"] == i).sum())
+    for i in range(NUM_CLASSES)
+    if (master_df["class_idx"] == i).sum() > 0
+}
+print("Actual class counts:")
+for i, count in actual_counts.items():
+    print(f"  [{i}] {_CN[i]:<30}: {count:,}")
+
+class_weights = compute_class_weights_from_counts(actual_counts)
+print(f"\nClass weights (NV=1.0 baseline):")
+for i, w in enumerate(class_weights):
+    print(f"  [{i}] {_CN[i]:<30}: ×{w:.1f}")
+
+model = FairDermNet(
+    num_classes=8,          # 8-class from class_taxonomy
+    num_skin_tones=6,
+    pretrained=True,
+    dropout_backbone=0.3,
+    dropout_head=0.2,
+).to(DEVICE)
+model = model.float()
+
+params = model.count_parameters()
+print(f"\nFairDermNet (8-class) on {DEVICE}")
+print(f"  Total params:     {params['total_M']}M")
+print(f"  Trainable params: {params['trainable_M']}M")
+
+if CUDA_AVAILABLE:
+    alloc_gb    = torch.cuda.memory_allocated(0) / 1e9
+    reserved_gb = torch.cuda.memory_reserved(0) / 1e9
+    print(f"\nVRAM after model load:")
+    print(f"  Allocated: {alloc_gb:.2f} GB")
+    print(f"  Reserved:  {reserved_gb:.2f} GB")
+    print(f"  Free:      {6.0 - reserved_gb:.2f} GB remaining")
+    if reserved_gb > 3.5:
+        print("⚠ WARNING: Model is using >3.5 GB before training starts.")
+        print("  Reduce BATCH_SIZE to 8 in Cell 2.")
+
+criterion = FairnessAwareLoss(
+    alpha=ALPHA,
+    beta=BETA,
+    gamma=GAMMA,
+    class_weights=class_weights.to(DEVICE),
+    label_smoothing=0.1,
+    focal_gamma=2.0,
+    num_classes=8,
+)
+print("\n✓ Model and loss ready (8-class).")
+
+===== CELL 15 (ec=9) =====
+import time
+model.train()
+_b = next(iter(train_loader))
+_imgs = _b["image"][:4].to(DEVICE)
+_cls  = _b["class_idx"][:4].to(DEVICE)
+_tone = _b["skin_tone"][:4].to(DEVICE)
+
+t0 = time.time()
+with autocast('cuda', enabled=USE_AMP):
+    risk_logits, fitz_logits = model(_imgs)
+    loss, bd = criterion(risk_logits, fitz_logits, _cls, _tone)
+loss.backward()
+print(f"✓ Single batch forward+backward: {(time.time()-t0)*1000:.1f}ms")
+print(f"  risk_logits: {risk_logits.shape} | fitz_logits: {fitz_logits.shape}")
+print(f"  loss: {bd['loss_total']:.4f}")
+
+===== CELL 16 (ec=10) =====
+import importlib
+import model.fairdermet as fd
+importlib.reload(fd)
+from model.fairdermet import FairDermNet
+print("reloaded — line 129:", open(r"C:\Users\sanja\Documents\sanjana\CAMBRIDGE\final year project\model\model\fairdermet.py").readlines()[128].strip())
+
+===== CELL 18 (ec=11) =====
+from sklearn.metrics import accuracy_score, balanced_accuracy_score
+
+optimiser  = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+scheduler  = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimiser, T_0=10, T_mult=2, eta_min=1e-6)
+scaler     = GradScaler(growth_interval=200) if USE_AMP else None
+stopper    = EarlyStopping(patience=PATIENCE, mode="max")
+ckpt_saver = ModelCheckpoint(path=CHECKPOINTS / "best.pth", monitor="balanced_accuracy", mode="max")
+history    = []
+
+print(f"Starting training — {EPOCHS} epochs | effective batch = {BATCH_SIZE}×{GRAD_ACCUM} = {BATCH_SIZE*GRAD_ACCUM}")
+print(f"RTX 3050 AMP: {'ON (fp16)' if USE_AMP else 'OFF'} | 8-class mode\n")
+
+try:
+    for epoch in range(EPOCHS):
+        model.train()
+        train_loss = 0.0
+        train_preds, train_labels_ep, train_tones = [], [], []
+        optimiser.zero_grad()
+
+        pbar = tqdm(train_loader, desc=f"Epoch {epoch+1:02d}/{EPOCHS} [train]", leave=False, ncols=90)
+        for step, batch in enumerate(pbar):
+            imgs         = batch["image"].to(DEVICE, non_blocking=True)
+            class_labels = batch["class_idx"].to(DEVICE, non_blocking=True)
+            tones        = batch["skin_tone"].to(DEVICE, non_blocking=True)
+
+            with autocast('cuda', enabled=USE_AMP):
+                risk_logits, fitz_logits = model(imgs)
+                loss, breakdown = criterion(risk_logits, fitz_logits, class_labels, tones)
+                loss = loss / GRAD_ACCUM
+
+            if USE_AMP:
+                scaler.scale(loss).backward()
+            else:
+                loss.backward()
+
+            if (step + 1) % GRAD_ACCUM == 0:
+                if USE_AMP:
+                    scaler.unscale_(optimiser)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    scaler.step(optimiser)
+                    scaler.update()
+                else:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    optimiser.step()
+                optimiser.zero_grad()
+                scheduler.step(epoch + step / len(train_loader))
+
+            train_loss += breakdown["loss_total"]
+            with torch.no_grad():
+                p = torch.argmax(risk_logits, dim=-1).cpu().numpy()  # predicted class idx
+            train_preds.extend(p)
+            train_labels_ep.extend(class_labels.cpu().numpy())
+            train_tones.extend(tones.cpu().numpy())
+            pbar.set_postfix(loss=f"{breakdown['loss_total']:.4f}")
+
+        model.eval()
+        val_loss = 0.0
+        val_preds, val_labels_ep, val_tones = [], [], []
+        with torch.no_grad():
+            for batch in tqdm(val_loader, desc=f"Epoch {epoch+1:02d}/{EPOCHS} [val]", leave=False, ncols=90):
+                imgs         = batch["image"].to(DEVICE, non_blocking=True)
+                class_labels = batch["class_idx"].to(DEVICE, non_blocking=True)
+                tones        = batch["skin_tone"].to(DEVICE, non_blocking=True)
+                model.train()
+                with autocast('cuda', enabled=USE_AMP):
+                    risk_logits, fitz_logits = model(imgs)
+                    _, vbd = criterion(risk_logits, fitz_logits, class_labels, tones)
+                model.eval()
+                val_loss += vbd["loss_total"]
+                p = torch.argmax(risk_logits, dim=-1).cpu().numpy()
+                val_preds.extend(p)
+                val_labels_ep.extend(class_labels.cpu().numpy())
+                val_tones.extend(tones.cpu().numpy())
+
+        n_train  = max(1, len(train_loader))
+        n_val    = max(1, len(val_loader))
+        t_labels = np.array(train_labels_ep)
+        t_preds  = np.array(train_preds)
+        v_labels = np.array(val_labels_ep)
+        v_preds  = np.array(val_preds)
+        v_tones  = np.array(val_tones)
+
+        t_m = {
+            "accuracy":          accuracy_score(t_labels, t_preds),
+            "balanced_accuracy": balanced_accuracy_score(t_labels, t_preds),
+        }
+        v_m = {
+            "accuracy":          accuracy_score(v_labels, v_preds),
+            "balanced_accuracy": balanced_accuracy_score(v_labels, v_preds),
+        }
+
+        # Fairness gap: binary malignant (class<5) sensitivity per skin tone
+        v_bin_true = (v_labels < 5).astype(int)
+        v_bin_pred = (v_preds  < 5).astype(int)
+        tone_sens  = {}
+        for t_idx in range(6):
+            mask = v_tones == t_idx
+            if mask.sum() < 5:
+                continue
+            tp = int(((v_bin_pred[mask]==1) & (v_bin_true[mask]==1)).sum())
+            fn = int(((v_bin_pred[mask]==0) & (v_bin_true[mask]==1)).sum())
+            if tp + fn > 0:
+                tone_sens[t_idx] = tp / (tp + fn)
+        fairness_gap = (max(tone_sens.values()) - min(tone_sens.values())
+                        if len(tone_sens) >= 2 else 0.0)
+
+        lr_now    = optimiser.param_groups[0]["lr"]
+        vram_used = torch.cuda.memory_reserved(0) / 1e9 if CUDA_AVAILABLE else 0.0
+
+        log = {
+            "epoch":                   epoch + 1,
+            "train_loss":              train_loss / n_train,
+            "val_loss":                val_loss / n_val,
+            "train_accuracy":          t_m["accuracy"],
+            "train_balanced_accuracy": t_m["balanced_accuracy"],
+            "val_accuracy":            v_m["accuracy"],
+            "val_balanced_accuracy":   v_m["balanced_accuracy"],
+            "val_fairness_gap":        fairness_gap,
+            "lr":                      lr_now,
+            "vram_gb":                 round(vram_used, 2),
+        }
+        history.append(log)
+        print(f"Ep {epoch+1:02d} | Loss {log['train_loss']:.4f}→{log['val_loss']:.4f} | "
+              f"BalAcc {log['val_balanced_accuracy']:.4f} | Acc {log['val_accuracy']:.4f} | "
+              f"Gap {log['val_fairness_gap']:.3f} | LR {lr_now:.1e} | VRAM {vram_used:.2f}GB")
+
+        # Use correct callback API: step(model, optimizer, epoch, metrics)
+        ckpt_saver.step(model, optimiser, epoch, v_m)
+        if stopper.step(v_m["balanced_accuracy"]):
+            print(f"\n⏹ Early stopping at epoch {epoch+1}.")
+            break
+
+        if CUDA_AVAILABLE:
+            torch.cuda.empty_cache()
+        gc.collect()
+
+        if vram_used > 5.8:
+            print(f"\n⚠ VRAM near limit ({vram_used:.2f} GB). Reduce BATCH_SIZE to 8 in Cell 2 and restart.")
+            break
+
+except torch.cuda.OutOfMemoryError:
+    print("\n⚠ CUDA Out of Memory! Reduce BATCH_SIZE to 8 in Cell 2 and restart the notebook.")
+    raise
+
+print(f"\n✓ Training complete. Best checkpoint: {CHECKPOINTS}/best.pth")
+
+===== CELL 20 (ec=12) =====
+import json
+with open(CHECKPOINTS / "training_history.json", "w") as f:
+    json.dump(history, f, indent=2)
+
+epochs_x = [h["epoch"] for h in history]
+fig, axes = plt.subplots(2, 3, figsize=(15, 9))
+fig.suptitle("FairDermNet — Training History (9-class, RTX 3050)", fontsize=13)
+# Updated metric keys: balanced_accuracy replaces auc for 9-class
+plots = [
+    ("train_loss",              "val_loss",              "Loss",                0, 0),
+    ("train_balanced_accuracy", "val_balanced_accuracy", "Balanced Accuracy",   0, 1),
+    ("train_accuracy",          "val_accuracy",          "Overall Accuracy",    0, 2),
+    (None,                      "val_balanced_accuracy", "Val Balanced Acc",    1, 0),
+    (None,                      "val_accuracy",          "Val Overall Acc",     1, 1),
+    (None,                      "val_fairness_gap",      "Equalized Odds Gap",  1, 2),
+]
+for train_key, val_key, title, r, c in plots:
+    ax = axes[r, c]
+    if train_key:
+        ax.plot(epochs_x, [h[train_key] for h in history], label="Train", color="steelblue", linewidth=1.5)
+    ax.plot(epochs_x, [h[val_key] for h in history], label="Val", color="darkorange", linewidth=1.5)
+    if "gap" in val_key or "fairness" in val_key:
+        ax.axhline(0.05, color="red", linestyle="--", linewidth=1, alpha=0.7, label="Target (<5%)")
+    if "balanced_accuracy" in val_key or "accuracy" in val_key:
+        ax.set_ylim(0, 1.05)
+    ax.set_title(title, fontsize=10)
+    ax.set_xlabel("Epoch", fontsize=9)
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig(FIGURES_DIR / "training_curves.png", dpi=150, bbox_inches="tight")
+plt.show()
+print(f"Saved: {FIGURES_DIR}/training_curves.png")
+
+===== CELL 22 (ec=2) =====
+import json
+from sklearn.metrics import (
+    classification_report, confusion_matrix,
+    accuracy_score, balanced_accuracy_score
+)
+import seaborn as sns
+from matplotlib.patches import Patch
+from model.class_taxonomy import CLASS_NAMES, CLASS_SHORT, CLASS_RISK_TIER, MALIGNANT_CLASSES
+
+
+def evaluate_multiclass(model, loader, device):
+    """Run inference. Returns (true_classes, pred_classes, pred_probs [N, num_classes], skin_tones)."""
+    model.eval()
+    all_true, all_pred, all_probs, all_tones = [], [], [], []
+    with torch.no_grad():
+        for batch in tqdm(loader, desc="Evaluating", leave=False):
+            imgs   = batch["image"].to(device, non_blocking=True)
+            logits = model(imgs)
+            probs  = F.softmax(logits, dim=-1).cpu().numpy()
+            preds  = np.argmax(probs, axis=1)
+            all_true.extend(batch["class_idx"].numpy())
+            all_pred.extend(preds)
+            all_probs.extend(probs)
+            all_tones.extend(batch["skin_tone"].numpy())
+    return (np.array(all_true), np.array(all_pred),
+            np.array(all_probs), np.array(all_tones))
+
+
+print("Loading best checkpoint for final evaluation...")
+best_model = FairDermNet.from_checkpoint(
+    CHECKPOINTS / "best.pth",
+    num_classes=NUM_CLASSES,
+    num_skin_tones=len(FITZPATRICK_NAMES),
+)
+best_model.eval().to(DEVICE)
+
+true_cls, pred_cls, pred_probs, eval_tones = evaluate_multiclass(
+    best_model, test_loader, DEVICE
+)
+
+overall_acc  = accuracy_score(true_cls, pred_cls)
+balanced_acc = balanced_accuracy_score(true_cls, pred_cls)
+
+print("=" * 60)
+print(f"  {NUM_CLASSES}-CLASS EVALUATION — TEST SET")
+print("=" * 60)
+print(f"  Overall accuracy:         {overall_acc*100:.2f}%")
+print(f"  Balanced accuracy:        {balanced_acc*100:.2f}%")
+print(f"  (Balanced = mean per-class recall — fairer for imbalanced data)")
+
+present_classes = sorted(set(true_cls))
+present_names   = [CLASS_SHORT[i] for i in present_classes]
+print(f"\n  Per-class breakdown:")
+print(classification_report(
+    true_cls, pred_cls,
+    labels=present_classes,
+    target_names=present_names,
+    digits=3, zero_division=0
+))
+
+# Binary sensitivity/specificity (for DDI comparison)
+true_binary = np.array([1 if c in MALIGNANT_CLASSES else 0 for c in true_cls])
+pred_binary = np.array([1 if c in MALIGNANT_CLASSES else 0 for c in pred_cls])
+tp = int(((pred_binary==1)&(true_binary==1)).sum())
+fn = int(((pred_binary==0)&(true_binary==1)).sum())
+tn = int(((pred_binary==0)&(true_binary==0)).sum())
+fp = int(((pred_binary==1)&(true_binary==0)).sum())
+sens = tp / (tp + fn + 1e-8)
+spec = tn / (tn + fp + 1e-8)
+print(f"\n  Binary sensitivity (malignant detection): {sens*100:.2f}%")
+print(f"  Binary specificity:                       {spec*100:.2f}%")
+print(f"  False negative rate:                      {(1-sens)*100:.2f}%")
+
+# ── Confusion matrix ──────────────────────────────────────────
+fig, ax = plt.subplots(figsize=(11, 9))
+cm = confusion_matrix(true_cls, pred_cls, labels=present_classes)
+sns.heatmap(
+    cm, annot=True, fmt="d", cmap="Blues", ax=ax,
+    xticklabels=present_names, yticklabels=present_names,
+    cbar=True, annot_kws={"size": 9}
+)
+ax.set_xlabel("Predicted class", fontsize=11)
+ax.set_ylabel("True class", fontsize=11)
+ax.set_title(f"{NUM_CLASSES}-Class Confusion Matrix — DermaLens Test Set",
+             fontweight="bold", fontsize=12)
+plt.xticks(rotation=30, ha="right", fontsize=9)
+plt.yticks(rotation=0, fontsize=9)
+plt.tight_layout()
+plt.savefig(FIGURES_DIR / "confusion_matrix_9class.png", dpi=150)
+plt.show()
+print(f"Saved: {FIGURES_DIR}/confusion_matrix_9class.png")
+
+# ── Per-class accuracy bar chart ──────────────────────────────
+per_class_acc = []
+for i in present_classes:
+    mask = true_cls == i
+    acc  = float((pred_cls[mask] == i).mean()) if mask.sum() > 0 else 0.0
+    per_class_acc.append((CLASS_NAMES[i], acc, CLASS_RISK_TIER[i]))
+
+fig, ax = plt.subplots(figsize=(12, 5))
+names  = [x[0] for x in per_class_acc]
+accs   = [x[1] for x in per_class_acc]
+tiers  = [x[2] for x in per_class_acc]
+colors = ["#E24B4A" if t==2 else "#EF9F27" if t==1 else "#378ADD" for t in tiers]
+bars   = ax.bar(names, [a*100 for a in accs], color=colors, alpha=0.85, width=0.6)
+for bar, acc in zip(bars, accs):
+    ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+1.5,
+            f"{acc*100:.1f}%", ha="center", va="bottom", fontsize=9, fontweight="bold")
+ax.tick_params(axis="x", rotation=25)
+legend_elements = [
+    Patch(facecolor="#E24B4A", label="High risk"),
+    Patch(facecolor="#EF9F27", label="Medium risk"),
+    Patch(facecolor="#378ADD", label="Low risk"),
+]
+ax.legend(handles=legend_elements, loc="upper right", fontsize=9)
+ax.grid(axis="y", alpha=0.3)
+plt.tight_layout()
+plt.savefig(FIGURES_DIR / "per_class_accuracy.png", dpi=150)
+plt.show()
+print(f"Saved: {FIGURES_DIR}/per_class_accuracy.png")
+
+fairness_metrics = compute_fairness_metrics(
+    torch.tensor(pred_probs, dtype=torch.float32),
+    torch.tensor(true_cls, dtype=torch.long),
+    torch.tensor(eval_tones, dtype=torch.long),
+    num_classes=NUM_CLASSES,
+)
+report = build_fairness_report(
+    fairness_metrics,
+    overall_accuracy=overall_acc,
+    overall_balanced_accuracy=balanced_acc,
+)
+
+report_path = CHECKPOINTS / "test_fairness_report.txt"
+with open(report_path, "w") as f:
+    json.dump(report, f, indent=2)
+
+print(f"\nFairness report saved: {report_path}")
+
+===== CELL 24 (ec=None) =====
+# Cell 9b — DDI Fairness Evaluation (held-out, expert-labelled)
+# Requires: Cell 9 (loads best_model) OR checkpoints/best.pth from prior run
+if 'ddi_df' not in globals():
+    ddi_df = None
+
+if ddi_df is None or len(ddi_df) == 0:
+    print("ddi_df not available in this kernel session.")
+    ddi_csv = DATASETS_DIR / "ddi_eval.csv"
+    if ddi_csv.exists():
+        ddi_df = pd.read_csv(ddi_csv)
+        print(f"Loaded existing DDI eval table from {ddi_csv}")
+    else:
+        ddi_df = None
+
+if ddi_df is None or len(ddi_df) == 0:
+    print("DDI not available — skipping DDI fairness evaluation.")
+    print("Download from: https://aimi.stanford.edu/datasets/ddi-diverse-dermatology-images")
+else:
+    # Ensure best_model is available (from Cell 9 or load from checkpoint)
+    try:
+        best_model
+    except NameError:
+        ckpt_path = CHECKPOINTS / "best.pth"
+        if not ckpt_path.exists():
+            raise RuntimeError(
+                "best_model not found. Run Cell 9 first (Test set evaluation), or ensure "
+                f"training has completed and {ckpt_path} exists."
+            )
+        print("Loading best checkpoint (Cell 9 not run — loading from disk)...")
+        best_model = FairDermNet.from_checkpoint(
+            ckpt_path,
+            num_classes=NUM_CLASSES,
+            num_skin_tones=len(FITZPATRICK_NAMES),
+        )
+        best_model.eval().to(DEVICE)
+
+    print("=" * 58)
+    print("DDI FAIRNESS EVALUATION (held-out, expert-labelled)")
+    from model.class_taxonomy import MALIGNANT_CLASSES
+    print("=" * 58)
+
+    ddi_csv = DATASETS_DIR / "ddi_eval.csv"
+    ddi_df.to_csv(ddi_csv, index=False)
+
+    ddi_dataset = SkinLesionDataset(
+        ddi_csv,
+        transform=get_val_transforms(INPUT_SIZE),
+        exclude_class_minus1=False,
+    )
+    ddi_loader = DataLoader(
+        ddi_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=NUM_WORKERS,
+        pin_memory=PIN_MEMORY,
+    )
+
+    ddi_preds, ddi_labels, ddi_tones = [], [], []
+    with torch.no_grad():
+        for batch in tqdm(ddi_loader, desc="DDI evaluation"):
+            imgs = batch["image"].to(DEVICE, non_blocking=True)
+            logits = best_model(imgs)
+            probs = F.softmax(logits, dim=-1)[:, list(MALIGNANT_CLASSES)].sum(dim=-1).cpu().numpy()
+            ddi_preds.extend(probs)
+            ddi_labels.extend(batch["binary_label"].numpy())
+            ddi_tones.extend(batch["skin_tone"].numpy())
+
+    ddi_labels_arr = np.array(ddi_labels)
+    ddi_preds_arr = np.array(ddi_preds)
+    ddi_tones_arr = np.array(ddi_tones)
+
+    y_pred_bin = (ddi_preds_arr >= 0.5).astype(int)
+    tp = int(((y_pred_bin == 1) & (ddi_labels_arr == 1)).sum())
+    tn = int(((y_pred_bin == 0) & (ddi_labels_arr == 0)).sum())
+    fp = int(((y_pred_bin == 1) & (ddi_labels_arr == 0)).sum())
+    fn = int(((y_pred_bin == 0) & (ddi_labels_arr == 1)).sum())
+
+    from sklearn.metrics import roc_auc_score
+
+    ddi_overall = {
+        "accuracy": (tp + tn) / (len(ddi_labels_arr) + 1e-8),
+        "auc": roc_auc_score(ddi_labels_arr, ddi_preds_arr),
+        "sensitivity": tp / (tp + fn + 1e-8),
+        "specificity": tn / (tn + fp + 1e-8),
+    }
+
+    print(f"\nDDI Overall Metrics:")
+    print(f"  Accuracy:    {ddi_overall['accuracy']*100:.2f}%")
+    print(f"  AUC-ROC:     {ddi_overall['auc']:.4f}")
+    print(f"  Sensitivity: {ddi_overall['sensitivity']*100:.2f}%")
+    print(f"  Specificity: {ddi_overall['specificity']*100:.2f}%")
+
+    print(f"\nDDI Per-Group Sensitivity (expert-labelled Fitzpatrick):")
+    GROUP_NAMES = {0: "FST I–II  (light)", 2: "FST III–IV (mid)", 4: "FST V–VI  (dark)"}
+    group_sens = {}
+    y_pred_bin = (ddi_preds_arr >= 0.5).astype(int)
+
+    from sklearn.metrics import confusion_matrix
+    for tone_idx, group_name in GROUP_NAMES.items():
+        mask = ddi_tones_arr == tone_idx
+        n = mask.sum()
+        if n < 5:
+            print(f"  {group_name}: insufficient samples (n={n})")
+            continue
+        cm = confusion_matrix(ddi_labels_arr[mask], y_pred_bin[mask], labels=[0, 1])
+        tn, fp, fn, tp = cm.ravel()
+        sens = tp / (tp + fn + 1e-8)
+        spec = tn / (tn + fp + 1e-8)
+        group_sens[tone_idx] = sens
+        print(f"  {group_name}: Sens={sens:.4f} | Spec={spec:.4f} | n={n}")
+
+    if len(group_sens) >= 2:
+        vals = list(group_sens.values())
+        gap = max(vals) - min(vals)
+        print(f"\n  Equalized Odds Gap (DDI): {gap*100:.2f}%  "
+              f"{'✓ TARGET MET (<5%)' if gap < 0.05 else '✗ Above target'}")
+    else:
+        print("  Not enough groups to compute equalized odds gap.")
+
+    labels_plot = [GROUP_NAMES[k] for k in sorted(group_sens.keys())]
+    values_plot = [group_sens[k] for k in sorted(group_sens.keys())]
+    colors_plot = ["#FFD580", "#C19A6B", "#4A2511"][:len(values_plot)]
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    bars = ax.bar(labels_plot, values_plot, color=colors_plot, alpha=0.9, width=0.5)
+    ax.axhline(0.962, color="steelblue", linestyle="--", linewidth=1.5,
+               label="Target sensitivity (96.2%)", alpha=0.8)
+    for bar in bars:
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.008,
+                f"{bar.get_height():.3f}", ha="center", va="bottom",
+                fontsize=10, fontweight="bold")
+    ax.set_ylim(0, 1.1)
+    ax.set_ylabel("Sensitivity (TPR)")
+    ax.set_title("DDI Fairness Evaluation\n"
+                 "(Expert-Labelled Fitzpatrick | Held-Out Test Set)", fontweight="bold")
+    ax.legend(fontsize=9)
+    ax.grid(axis="y", alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(FIGURES_DIR / "ddi_fairness_evaluation.png", dpi=150)
+    plt.show()
+
+    print(f"\nSaved: {FIGURES_DIR}/ddi_fairness_evaluation.png")
+    print("  the gold-standard fairness benchmark in dermatology AI.")
+
+    print("\n✓ DDI evaluation complete.")
+    print("  This figure uses expert-labelled skin tone ground truth —")
+
+===== CELL 26 (ec=None) =====
+# Cell 9c — Clinical Threshold Analysis (8-class compatible)
+# Derives binary malignant probability from 8-class softmax output.
+# Requires Cell 9 output: true_cls, pred_probs (shape [N,8]).
+try:
+    true_cls
+    pred_probs
+except NameError:
+    raise RuntimeError("Run Cell 9 first (Test set evaluation) to load true_cls and pred_probs.")
+
+import numpy as np
+import matplotlib.gridspec as gridspec
+from sklearn.metrics import roc_curve, auc, confusion_matrix, f1_score
+
+    # Derive binary labels and malignant probability from 8-class predictions
+# Malignant classes: 0-3 (MEL, BCC, SCC, AK) — see MALIGNANT_CLASSES in class_taxonomy
+from model.class_taxonomy import MALIGNANT_CLASSES, class_idx_to_binary
+labels = np.array([class_idx_to_binary(int(c)) for c in true_cls])   # 1 = malignant, 0 = benign
+preds  = pred_probs[:, list(MALIGNANT_CLASSES)].sum(axis=1)          # sum of malignant class probs
+
+# STEP 1 — Find optimal threshold (sensitivity >= 96% or Youden's J)
+fpr, tpr, thresholds = roc_curve(labels, preds)
+roc_auc = auc(fpr, tpr)
+
+clinical_mask = tpr >= 0.96
+if clinical_mask.any():
+    best_idx_clinical = np.where(clinical_mask)[0][np.argmin(fpr[clinical_mask])]
+    optimal_threshold  = float(thresholds[best_idx_clinical])
+    optimal_sens       = float(tpr[best_idx_clinical])
+    optimal_spec       = float(1 - fpr[best_idx_clinical])
+    method_used        = "Clinical constraint (sensitivity ≥ 96%)"
+else:
+    youden_j   = tpr - fpr
+    best_idx   = np.argmax(youden_j)
+    optimal_threshold = float(thresholds[best_idx])
+    optimal_sens      = float(tpr[best_idx])
+    optimal_spec      = float(1 - fpr[best_idx])
+    method_used       = "Youden's J statistic (fallback)"
+
+print("=" * 56)
+print("  THRESHOLD ANALYSIS")
+print("=" * 56)
+print(f"  Method: {method_used}")
+print(f"  Optimal threshold: {optimal_threshold:.3f}")
+print(f"  At this threshold:")
+print(f"    Sensitivity (TPR):  {optimal_sens*100:.2f}%")
+print(f"    Specificity (TNR):  {optimal_spec*100:.2f}%")
+print(f"    False Negative Rate: {(1-optimal_sens)*100:.2f}%")
+print(f"    AUC-ROC:            {roc_auc:.4f}")
+print("=" * 56)
+
+# STEP 2 — Threshold sweep table
+sweep_thresholds = np.arange(0.20, 0.75, 0.05)
+print(f"\n{'Threshold':>10} {'Sensitivity':>12} {'Specificity':>12} {'FNR':>8} {'FPR':>8} {'F1':>8}")
+print("-" * 62)
+
+sweep_results = []
+for t in sweep_thresholds:
+    y_pred_t = (preds >= t).astype(int)
+    tn, fp, fn, tp = confusion_matrix(labels, y_pred_t, labels=[0,1]).ravel()
+    sens = tp / (tp + fn + 1e-8)
+    spec = tn / (tn + fp + 1e-8)
+    fnr  = fn / (tp + fn + 1e-8)
+    fpr_ = fp / (tn + fp + 1e-8)
+    f1   = f1_score(labels, y_pred_t, zero_division=0)
+    sweep_results.append((t, sens, spec, fnr, fpr_, f1))
+    marker = " ← optimal" if abs(t - optimal_threshold) < 0.03 else ""
+    print(f"{t:>10.2f} {sens*100:>11.1f}% {spec*100:>11.1f}% {fnr*100:>7.1f}% {fpr_*100:>7.1f}% {f1:>8.3f}{marker}")
+
+# STEP 3 — Confusion matrices
+y_pred_050     = (preds >= 0.50).astype(int)
+y_pred_optimal = (preds >= optimal_threshold).astype(int)
+cm_050     = confusion_matrix(labels, y_pred_050,     labels=[0,1])
+cm_optimal = confusion_matrix(labels, y_pred_optimal, labels=[0,1])
+
+def cm_stats(cm):
+    tn, fp, fn, tp = cm.ravel()
+    return {"TN": tn, "FP": fp, "FN": fn, "TP": tp,
+            "sens": tp / (tp + fn + 1e-8), "spec": tn / (tn + fp + 1e-8),
+            "fnr": fn / (tp + fn + 1e-8), "acc": (tp + tn) / (tp + tn + fp + fn + 1e-8)}
+s050  = cm_stats(cm_050)
+s_opt = cm_stats(cm_optimal)
+
+# STEP 4 — Figure
+import seaborn as sns
+fig = plt.figure(figsize=(16, 10))
+fig.suptitle("DermaLens — Clinical Threshold Analysis", fontsize=14, fontweight="bold")
+gs  = gridspec.GridSpec(2, 3, figure=fig, hspace=0.45, wspace=0.38)
+
+ax_roc = fig.add_subplot(gs[0, 0])
+ax_roc.plot(fpr, tpr, color="steelblue", linewidth=2, label=f"ROC (AUC = {roc_auc:.4f})")
+ax_roc.plot([0,1],[0,1],"k--", alpha=0.3, linewidth=1)
+idx_050 = np.argmin(np.abs(thresholds - 0.50))
+ax_roc.scatter(fpr[idx_050], tpr[idx_050], s=100, color="darkorange", zorder=5, label=f"Threshold 0.50\nSens={tpr[idx_050]*100:.1f}%")
+idx_opt = np.argmin(np.abs(thresholds - optimal_threshold))
+ax_roc.scatter(fpr[idx_opt], tpr[idx_opt], s=120, color="green", marker="*", zorder=6, label=f"Threshold {optimal_threshold:.2f} (optimal)\nSens={tpr[idx_opt]*100:.1f}%")
+ax_roc.axhline(0.96, color="red", linestyle=":", linewidth=1, alpha=0.7, label="Sensitivity target (96%)")
+ax_roc.set_xlabel("False Positive Rate"); ax_roc.set_ylabel("True Positive Rate")
+ax_roc.set_title("ROC Curve", fontweight="bold"); ax_roc.legend(loc="lower right", fontsize=7.5)
+ax_roc.grid(alpha=0.3); ax_roc.set_xlim([0, 1]); ax_roc.set_ylim([0, 1.02])
+
+ax_cm1 = fig.add_subplot(gs[0, 1])
+sns.heatmap(cm_050, annot=True, fmt="d", cmap="Blues", ax=ax_cm1,
+            xticklabels=["Benign", "Malignant"], yticklabels=["Benign", "Malignant"],
+            cbar=False, annot_kws={"size": 13, "weight": "bold"})
+ax_cm1.set_xlabel("Predicted"); ax_cm1.set_ylabel("Actual")
+ax_cm1.set_title(f"Threshold = 0.50\nSens={s050['sens']*100:.1f}%  Spec={s050['spec']*100:.1f}%  FNR={s050['fnr']*100:.1f}%", fontsize=9, fontweight="bold")
+ax_cm1.add_patch(plt.Rectangle((0, 1), 1, 1, fill=False, edgecolor="red", lw=2.5))
+ax_cm1.text(0.5, 1.5, f"Missed\ncancers\n{cm_050[1,0]}", ha="center", va="center", fontsize=8, color="red", fontweight="bold")
+
+ax_cm2 = fig.add_subplot(gs[0, 2])
+sns.heatmap(cm_optimal, annot=True, fmt="d", cmap="Greens", ax=ax_cm2,
+            xticklabels=["Benign", "Malignant"], yticklabels=["Benign", "Malignant"],
+            cbar=False, annot_kws={"size": 13, "weight": "bold"})
+ax_cm2.set_xlabel("Predicted"); ax_cm2.set_ylabel("Actual")
+ax_cm2.set_title(f"Threshold = {optimal_threshold:.2f} (clinical)\nSens={s_opt['sens']*100:.1f}%  Spec={s_opt['spec']*100:.1f}%  FNR={s_opt['fnr']*100:.1f}%", fontsize=9, fontweight="bold")
+ax_cm2.add_patch(plt.Rectangle((0, 1), 1, 1, fill=False, edgecolor="green", lw=2.5))
+ax_cm2.text(0.5, 1.5, f"Missed\ncancers\n{cm_optimal[1,0]}", ha="center", va="center", fontsize=8, color="green", fontweight="bold")
+
+ax_sweep = fig.add_subplot(gs[1, :])
+ts = [r[0] for r in sweep_results]
+ax_sweep.plot(ts, [r[1]*100 for r in sweep_results], "steelblue", linewidth=2, marker="o", ms=5, label="Sensitivity (TPR)")
+ax_sweep.plot(ts, [r[2]*100 for r in sweep_results], "darkorange", linewidth=2, marker="s", ms=5, label="Specificity (TNR)")
+ax_sweep.plot(ts, [r[3]*100 for r in sweep_results], "red", linewidth=2, marker="^", ms=5, linestyle="--", label="False Negative Rate")
+ax_sweep.axvline(0.50, color="gray", linestyle=":", linewidth=1.5, alpha=0.8, label="Default threshold (0.50)")
+ax_sweep.axvline(optimal_threshold, color="green", linestyle="-", linewidth=2, alpha=0.8, label=f"Clinical threshold ({optimal_threshold:.2f})")
+ax_sweep.axhline(96, color="steelblue", linestyle=":", linewidth=1, alpha=0.5, label="Sensitivity target (96%)")
+ax_sweep.set_xlabel("Decision threshold"); ax_sweep.set_ylabel("Metric (%)")
+ax_sweep.set_title("Threshold Sweep — Sensitivity / Specificity / FNR Trade-off", fontweight="bold")
+ax_sweep.legend(loc="center right", fontsize=9, ncol=2); ax_sweep.grid(alpha=0.3)
+ax_sweep.set_xlim([0.18, 0.77]); ax_sweep.set_ylim([0, 105])
+
+plt.savefig(FIGURES_DIR / "threshold_analysis.png", dpi=150, bbox_inches="tight")
+plt.show()
+print(f"\nSaved: {FIGURES_DIR}/threshold_analysis.png")
+
+# STEP 5 — Report summary
+missed_050 = int(cm_050[1, 0]); missed_opt = int(cm_optimal[1, 0]); reduction = missed_050 - missed_opt
+print("\n" + "=" * 56)
+print("  REPORT-READY SUMMARY")
+print("=" * 56)
+print(f"""
+Default threshold (0.50):
+  Sensitivity:        {s050['sens']*100:.1f}%
+  Specificity:        {s050['spec']*100:.1f}%
+  False Negative Rate: {s050['fnr']*100:.1f}%
+  Missed cancers:     {missed_050} of {int(labels.sum())} malignant lesions
+
+Clinical threshold ({optimal_threshold:.2f}):
+  Sensitivity:        {s_opt['sens']*100:.1f}%
+  Specificity:        {s_opt['spec']*100:.1f}%
+  False Negative Rate: {s_opt['fnr']*100:.1f}%
+  Missed cancers:     {missed_opt} of {int(labels.sum())} malignant lesions
+
+Improvement:          {reduction} fewer missed cancers ({reduction/max(missed_050,1)*100:.0f}% reduction in FNR)
+
+Report sentence:
+"While the default threshold of 0.50 yielded {s050['sens']*100:.0f}% sensitivity,
+it resulted in a {s050['fnr']*100:.0f}% false negative rate. By moving the
+operating point to {optimal_threshold:.2f} on the ROC curve — the point where
+sensitivity first reaches 96% — we reduced missed malignant lesions by
+{reduction} cases ({reduction/max(missed_050,1)*100:.0f}% reduction), at the cost of a
+manageable {(s_opt['fnr']-s050['fnr']+ s050['spec']-s_opt['spec'])*100/2:.0f}% increase in false positives.
+This reflects the clinical priority of a risk stratification tool:
+a false positive costs a dermatology appointment;
+a false negative can be fatal."
+""")
+print("=" * 56)
+
+# STEP 6 — Save for Flutter app
+import json
+threshold_config = {
+    "default_threshold":  0.50,
+    "clinical_threshold": round(optimal_threshold, 3),
+    "sensitivity_at_clinical": round(float(s_opt['sens']), 4),
+    "specificity_at_clinical": round(float(s_opt['spec']), 4),
+    "fnr_at_clinical":         round(float(s_opt['fnr']),  4),
+    "roc_auc":                 round(roc_auc, 4),
+    "method":                  method_used,
+}
+with open(CHECKPOINTS / "threshold_config.json", "w") as f:
+    json.dump(threshold_config, f, indent=2)
+print(f"\nThreshold config saved: {CHECKPOINTS}/threshold_config.json")
+print("Use clinical_threshold in your Flutter app inference logic.")
+print("\nFlutter usage:")
+print(f"  const double clinicalThreshold = {optimal_threshold:.3f};")
+print(f"  if (malignantProb >= clinicalThreshold) showHighRiskAlert();")
+
+===== CELL 28 (ec=None) =====
+FITZ_SHORT = ["I\n(fair)", "II", "III\n(med)", "IV", "V", "VI\n(dark)"]
+FITZ_COLORS = ["#FFE4C4","#FFDEAD","#D2B48C","#C19A6B","#8B6914","#4A2511"]
+sens_vals = [report.per_group_sensitivity.get(n, 0) for n in FITZPATRICK_NAMES]
+spec_vals = [report.per_group_specificity.get(n, 0) for n in FITZPATRICK_NAMES]
+x = np.arange(6)
+w = 0.35
+fig, ax = plt.subplots(figsize=(10, 5))
+bars1 = ax.bar(x - w/2, sens_vals, w, label="Sensitivity", color="steelblue", alpha=0.85)
+bars2 = ax.bar(x + w/2, spec_vals, w, label="Specificity", color="darkorange", alpha=0.85)
+ax.axhline(0.962, color="steelblue", linestyle="--", alpha=0.6, linewidth=1.2, label="Sens. target")
+ax.axhline(0.850, color="darkorange", linestyle="--", alpha=0.6, linewidth=1.2, label="Spec. target")
+for bar in [*bars1, *bars2]:
+    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.005, f"{bar.get_height():.3f}", ha="center", va="bottom", fontsize=7)
+gap = report.equalized_odds_gap
+ax.annotate(f"Equalized Odds Gap = {gap*100:.1f}%  {'✓ TARGET MET' if gap < 0.05 else '✗ Above target'}", xy=(0.02, 0.05), xycoords="axes fraction", fontsize=9, color="green" if gap < 0.05 else "red", bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow"))
+ax.set_xticks(x)
+ax.set_xticklabels(FITZ_SHORT, fontsize=9)
+ax.set_ylim(0, 1.1)
+ax.set_title("Sensitivity & Specificity per Fitzpatrick Skin Type", fontweight="bold")
+ax.legend(fontsize=9)
+ax.grid(axis="y", alpha=0.3)
+plt.tight_layout()
+plt.savefig(FIGURES_DIR / "fairness_by_skin_type.png", dpi=150)
+plt.show()
+
+===== CELL 30 (ec=None) =====
+torch.cuda.empty_cache(); gc.collect()
+target_layer = best_model.get_gradcam_target_layer()
+cam_gen = GradCAMPlusPlus(best_model, target_layer)
+transform = get_val_transforms(INPUT_SIZE)
+test_df_ = pd.read_csv(DATASETS_DIR / "split_test.csv")
+samples = test_df_.sample(3, random_state=99).reset_index(drop=True)
+fig, axes = plt.subplots(3, 3, figsize=(11, 11))
+fig.suptitle("DermaLens — GradCAM++ Explanations", fontweight="bold")
+for i, (_, row) in enumerate(samples.iterrows()):
+    img_bgr = cv2.imread(row["image_path"])
+    if img_bgr is None:
+        continue
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    img_rgb_224 = cv2.resize(img_rgb, (224, 224))
+    tensor = transform(image=img_rgb_224)["image"].unsqueeze(0).to(DEVICE)
+    with torch.no_grad():
+        best_model.eval()
+        prob = float(F.softmax(best_model(tensor), dim=-1)[0, list(MALIGNANT_CLASSES)].sum())
+    heatmap = cam_gen(tensor, target_class=1)
+    overlay = cam_gen.overlay(img_rgb_224, heatmap, alpha=0.45)
+    risk = "HIGH" if prob > 0.7 else "MED" if prob > 0.3 else "LOW"
+    gt = "Malignant" if class_idx_to_binary(int(row["class_idx"])) == 1 else "Benign"
+    axes[i, 0].imshow(img_rgb_224)
+    axes[i, 0].set_title(f"GT: {gt}", fontsize=9)
+    axes[i, 0].axis("off")
+    axes[i, 1].imshow(overlay)
+    axes[i, 1].set_title("Heatmap overlay", fontsize=9)
+    axes[i, 1].axis("off")
+    axes[i, 2].imshow(heatmap, cmap="hot")
+    axes[i, 2].set_title(f"Risk: {risk} ({prob*100:.1f}%)", fontsize=9)
+    axes[i, 2].axis("off")
+cam_gen.remove_hooks()
+plt.tight_layout()
+plt.savefig(FIGURES_DIR / "gradcam_examples.png", dpi=150)
+plt.show()
+
+===== CELL 32 (ec=None) =====
+from export.onnx_export import export_to_onnx
+from export.quantize_tflite import convert_onnx_to_tflite, benchmark_tflite
+
+EXPORT_DIR = PROJECT_ROOT / "export"
+EXPORT_DIR.mkdir(exist_ok=True)
+
+onnx_path = export_to_onnx(best_model, output_path=EXPORT_DIR / "fairdermet.onnx", input_size=224, opset_version=17, simplify=True)
+onnx_mb = onnx_path.stat().st_size / 1e6
+print(f"ONNX: {onnx_mb:.2f} MB")
+
+try:
+    tflite_path = convert_onnx_to_tflite(onnx_path=onnx_path, output_path=EXPORT_DIR / "fairdermet_int8.tflite", num_calibration_samples=200, quantize_int8=True)
+    tflite_mb = tflite_path.stat().st_size / 1e6
+    print(f"TFLite INT8: {tflite_mb:.2f} MB  {'✓' if tflite_mb < 6.0 else '✗'} target <6 MB")
+except Exception as e:
+    print(f"TFLite conversion failed (onnx-tf may be missing): {e}")
+    tflite_mb = None
+
+===== CELL 34 (ec=None) =====
+best_epoch = max(history, key=lambda h: h["val_balanced_accuracy"])
+from sklearn.metrics import roc_auc_score
+try:
+    auc = roc_auc_score(true_binary, pred_probs[:, :4].sum(axis=1))
+except Exception:
+    auc = float("nan")
+f1 = 2 * tp / (2 * tp + fp + fn + 1e-8)
+gp = report.get("per_group", [])
+perf_parity = (max(r["accuracy"] for r in gp) - min(r["accuracy"] for r in gp)) if len(gp) >= 2 else 0.0
+print("\n" + "="*60)
+print("DERMALENS FAIRDERMET — FINAL SUMMARY")
+print("Cambridge Institute of Technology | 2026-27")
+print("="*60)
+print(f"  Best epoch:         {best_epoch['epoch']}")
+print(f"  Overall Accuracy:   {report.get('overall_accuracy_pct', overall_acc*100):.2f}%")
+print(f"  Balanced Accuracy:  {report.get('overall_balanced_accuracy_pct', balanced_acc*100):.2f}%")
+print(f"  AUC-ROC (binary):   {auc:.4f}")
+print(f"  Sensitivity (TPR):  {sens*100:.2f}%")
+print(f"  Specificity (TNR):  {spec*100:.2f}%")
+print(f"  F1 (malignant):     {f1*100:.2f}%")
+print("-"*60)
+print(f"  Equalized Odds Gap: {report.get('equalized_odds_gap_pct', 0.0):.2f}%  {'✓' if report.get('fairness_target_met') else '✗ (target: <5%)'}")
+print(f"  Performance Parity: {perf_parity:.2f}%")
+print("-"*60)
+try:
+    print(f"  ONNX size:          {onnx_mb:.2f} MB")
+    print(f"  TFLite size:        {tflite_mb:.2f} MB  {'✓' if tflite_mb and tflite_mb < 6.0 else '✗'}")
+except NameError:
+    print("  (Run Cell 12 to see export sizes)")
+print("="*60)
+print("\n✓ Notebook complete.")
+print(f"   TFLite model → copy to Flutter app:")
+print(f"   {EXPORT_DIR / 'fairdermnet_int8.tflite'}")
+
+===== CELL 35 (ec=None) =====
+

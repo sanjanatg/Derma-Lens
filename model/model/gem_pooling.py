@@ -37,10 +37,12 @@ class GeMPooling(nn.Module):
             Pooled features [B, C]
         """
         p = self.p.clamp(min=1.0) if isinstance(self.p, nn.Parameter) else self.p
-        return F.avg_pool2d(
-            x.clamp(min=self.eps).pow(p),
-            kernel_size=(x.size(-2), x.size(-1))
-        ).pow(1.0 / p).squeeze(-1).squeeze(-1)
+        # Global pooling over the spatial dims. `mean` over (H, W) is numerically
+        # identical to `avg_pool2d(kernel_size=(H, W))` but exports to ONNX as a
+        # plain ReduceMean (v11), which onnx-tf supports — the dynamic kernel_size
+        # form cannot be exported by the legacy TorchScript exporter.
+        pooled = x.clamp(min=self.eps).pow(p).mean(dim=(-2, -1), keepdim=True)
+        return pooled.pow(1.0 / p).squeeze(-1).squeeze(-1)
 
     def __repr__(self) -> str:
         p_val = self.p.item() if isinstance(self.p, nn.Parameter) else self.p
