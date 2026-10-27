@@ -6,6 +6,7 @@ import '../providers/navigation_provider.dart';
 import '../providers/analysis_provider.dart';
 import '../providers/history_provider.dart';
 import '../theme/app_theme.dart';
+import '../data/disease_information.dart';
 
 class ResultsScreen extends ConsumerStatefulWidget {
   const ResultsScreen({super.key});
@@ -31,20 +32,15 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     final topPredictions = result.allPredictions.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    final descriptions = {
-      'Melanocytic Nevus': 'Common mole. Likely benign, but shows regular pigmentation patterns consistent with melanocytic origin.',
-      'Melanoma': 'Malignant skin cancer. Requires immediate professional evaluation. High priority for clinical follow-up.',
-      'Benign Keratosis': 'Non-cancerous skin growth. Often appears as a waxy brown, black, or tan growth.',
-      'Basal Cell Carcinoma': 'Slow-growing form of skin cancer. Rarely spreads but requires medical treatment to prevent local damage.',
-      'Actinic Keratosis': 'Precancerous skin patch caused by sun damage. Should be monitored and treated to prevent progression.',
-      'Vascular Lesion': 'Common skin growths composed of blood vessels. Usually benign, such as cherry angiomas or hemangiomas.',
-      'Dermatofibroma': 'Common benign fibrous nodule. Typically firm and may feel like a small stone under the skin.',
-    };
+    // ── Disease data from the shared repository ──────────────────────────────
+    final disease = diseaseInfoForLabel(result.label);
 
-    final isMalignant = result.label == 'Melanoma' || result.label == 'Basal Cell Carcinoma';
-    final recommendation = isMalignant
+    final isMalignant = result.isMalignant;
+    final recommendation = disease.status == DiseaseStatus.malignant
         ? 'URGENT: Schedule an appointment with a dermatologist as soon as possible for a professional biopsy and evaluation.'
-        : 'Continue to monitor for changes in size, color, or shape (ABCDE rules). Schedule a dermatologist check if concerned.';
+        : disease.status == DiseaseStatus.precancerous
+            ? 'Schedule a dermatological evaluation. Protect skin from further UV exposure and monitor for changes.'
+            : 'Usually no treatment required. Monitor for changes in size, shape, or color and consult a dermatologist if concerned.';
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -324,7 +320,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            descriptions[result.label] ?? 'Analysis complete. Please consult with a medical professional for a definitive diagnosis.',
+                            disease.overview,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               color: Colors.white70,
@@ -387,7 +383,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                         const SizedBox(width: 10),
                         _AuditBadge(
                           icon: Icons.category_outlined,
-                          label: 'Class ${topPredictions.indexWhere((e) => e.key == result.label) + 1}\nof 9',
+                          label: 'Class ${topPredictions.indexWhere((e) => e.key == result.label) + 1}\nof 8',
                           color: AppColors.primary,
                           bg: AppColors.primaryFixed.withValues(alpha: 0.4),
                         ),
@@ -484,6 +480,45 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
 
                     const SizedBox(height: 16),
 
+                    // ── CLINICAL DETAILS ─────────────────────────────────
+                    _ClinicalSection(
+                      icon: Icons.sick_outlined,
+                      title: 'SYMPTOMS & SIGNS',
+                      items: disease.symptoms,
+                      accentColor: isMalignant
+                          ? AppColors.malignant
+                          : AppColors.primary,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _ClinicalSection(
+                      icon: Icons.visibility_outlined,
+                      title: 'VISUAL FEATURES',
+                      items: disease.visualFeatures,
+                      accentColor: AppColors.tertiary,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _ClinicalSection(
+                      icon: Icons.biotech_outlined,
+                      title: 'DIAGNOSIS',
+                      items: disease.diagnosis,
+                      accentColor: AppColors.secondary,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _ClinicalSection(
+                      icon: Icons.checklist_rounded,
+                      title: 'WHAT TO DO',
+                      items: disease.whatToDo,
+                      accentColor: AppColors.earthyTan,
+                    ),
+
+                    const SizedBox(height: 16),
+
                     // ── RECOMMENDATION ───────────────────────────
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -548,6 +583,11 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                       ),
                     ),
 
+                    const SizedBox(height: 16),
+
+                    // ── REFERENCES ───────────────────────────────────────
+                    _ReferencesSection(references: disease.references),
+
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -596,6 +636,213 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
 
 // ── SUPPORTING WIDGETS ─────────────────────────────────────────────────
 
+/// Collapsible card showing a bullet-point clinical list (symptoms, diagnosis, etc.)
+class _ClinicalSection extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final List<String> items;
+  final Color accentColor;
+
+  const _ClinicalSection({
+    required this.icon,
+    required this.title,
+    required this.items,
+    required this.accentColor,
+  });
+
+  @override
+  State<_ClinicalSection> createState() => _ClinicalSectionState();
+}
+
+class _ClinicalSectionState extends State<_ClinicalSection> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _expanded
+              ? widget.accentColor.withValues(alpha: 0.35)
+              : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          children: [
+            // Header / tap area
+            InkWell(
+              onTap: () => setState(() => _expanded = !_expanded),
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: widget.accentColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(widget.icon,
+                          size: 17, color: widget.accentColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      widget.title,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: widget.accentColor,
+                            letterSpacing: 1.2,
+                          ),
+                    ),
+                    const Spacer(),
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 250),
+                      child: const Icon(Icons.keyboard_arrow_down_rounded,
+                          size: 20,
+                          color: AppColors.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Content
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: Padding(
+                padding:
+                    const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(height: 1),
+                    const SizedBox(height: 10),
+                    ...widget.items.map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: widget.accentColor
+                                      .withValues(alpha: 0.7),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                item,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(height: 1.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              crossFadeState: _expanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 250),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact references card with tappable link labels.
+class _ReferencesSection extends StatelessWidget {
+  final List<Map<String, String>> references;
+
+  const _ReferencesSection({required this.references});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.menu_book_outlined,
+                  size: 16, color: AppColors.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Text(
+                'REFERENCES',
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...references.map(
+            (ref) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Icon(Icons.link_rounded,
+                        size: 14, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      ref['label'] ?? '',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.primary,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.primary
+                                .withValues(alpha: 0.5),
+                            height: 1.4,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'This app is for screening support only and does not constitute '
+            'a medical diagnosis. Always consult a qualified dermatologist.',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  height: 1.5,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 class _ConfidenceBar extends StatelessWidget {
   final String label;
   final double value;
