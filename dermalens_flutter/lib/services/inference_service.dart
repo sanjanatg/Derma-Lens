@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io' show File;
+import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -97,8 +99,14 @@ class InferenceService {
   ///
   /// Returns [AnalysisResult] or null on failure.
   Future<AnalysisResult?> runInference(String imagePath) async {
+    // Auto-load the model on first use (loadModel() previously was never
+    // called anywhere in the app, so runInference always bailed out here).
     if (!_isLoaded || _interpreter == null) {
-      debugPrint('[InferenceService] ⚠ Model not loaded — call loadModel() first.');
+      debugPrint('[InferenceService] Model not loaded — loading now…');
+      await loadModel();
+    }
+    if (!_isLoaded || _interpreter == null) {
+      debugPrint('[InferenceService] ⚠ Model failed to load — cannot infer.');
       return null;
     }
 
@@ -215,50 +223,33 @@ class InferenceService {
   }
 
   /// Stable numerically-safe softmax over a 1-D list of logits.
+  ///
+  /// Uses dart:math's true [math.exp]. (A previous version used a hand-rolled
+  /// e^x approximation with a linear correction on the fractional exponent,
+  /// which skewed every softmax probability by up to ~20% and could even flip
+  /// the malignant/benign threshold decision on near-ties.)
   List<double> _softmax(List<double> logits) {
     final maxVal = logits.reduce((a, b) => a > b ? a : b);
-    final exp    = logits.map((v) => (v - maxVal).toDouble()).map(_exp).toList();
-    final sum    = exp.reduce((a, b) => a + b);
-    return exp.map((v) => v / sum).toList();
+    final exps   = logits.map((v) => math.exp(v - maxVal)).toList();
+    final sum    = exps.reduce((a, b) => a + b);
+    return exps.map((v) => v / sum).toList();
   }
 
-  double _exp(double x) {
-    // Clamp to avoid overflow
-    return x > 20.0 ? 485165195.0 : (x < -20.0 ? 2.06e-9 : _dartExp(x));
-  }
-
-  double _dartExp(double x) => _dartPow(2.718281828459045, x);
-
-  double _dartPow(double base, double exp) {
-    // Use Dart's built-in double arithmetic — this is essentially dart:math pow
-    // inlined to avoid a dart:math import cycle
-    double result = 1.0;
-    if (exp < 0) return 1.0 / _dartPow(base, -exp);
-    for (int i = 0; i < exp.truncate(); i++) {
-      result *= base;
-    }
-    return result * (1.0 + (exp - exp.truncateToDouble()) * (base - 1.0));
-  }
-
-  /// Read bytes from the filesystem via platform channel (outside of assets).
+  /// Read bytes from the filesystem or from Flutter assets.
   Future<Uint8List?> _readFileBytes(String path) async {
     try {
-      // Use rootBundle for asset paths, dart:io for camera captures
+      // Asset paths go through rootBundle
       if (path.startsWith('assets/')) {
         return (await rootBundle.load(path)).buffer.asUint8List();
       }
-      // Camera output is a filesystem path
-      final byteData = await const MethodChannel('file_access')
-          .invokeMethod<Uint8List>('readFile', {'path': path});
-      return byteData;
-    } catch (_) {
-      // Fallback: try asset
-      try {
-        return (await rootBundle.load(path)).buffer.asUint8List();
-      } catch (e) {
-        debugPrint('[InferenceService] ⚠ Could not read image: $path — $e');
-        return null;
-      }
+      // Camera output is a regular filesystem path — read it directly.
+      // (Previously this used a 'file_access' MethodChannel that has no
+      // native handler, so every real capture threw MissingPluginException
+      // and inference failed.)
+      return await File(path).readAsBytes();
+    } catch (e) {
+      debugPrint('[InferenceService] ⚠ Could not read image: $path — $e');
+      return null;
     }
   }
 

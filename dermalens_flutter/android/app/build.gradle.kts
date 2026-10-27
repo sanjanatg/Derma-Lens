@@ -15,10 +15,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.dermalens_app"
@@ -39,6 +35,26 @@ android {
     }
 }
 
+// Kotlin 2.4 DSL (kotlinOptions {} is deprecated)
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
 flutter {
     source = "../.."
+}
+
+// tflite_flutter 0.11.0 pins org.tensorflow:tensorflow-lite 2.11.0, whose
+// sibling artifacts (-api, -gpu, -gpu-api) all share the "org.tensorflow.lite"
+// namespace. TFLite ≥2.16.1 gives them unique namespaces, which AGP 9's
+// manifest validation requires — force the newer (binary-compatible) versions.
+configurations.all {
+    resolutionStrategy.force(
+        "org.tensorflow:tensorflow-lite:2.16.1",
+        "org.tensorflow:tensorflow-lite-api:2.16.1",
+        "org.tensorflow:tensorflow-lite-gpu:2.16.1",
+        "org.tensorflow:tensorflow-lite-gpu-api:2.16.1",
+    )
 }
