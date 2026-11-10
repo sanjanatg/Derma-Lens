@@ -16,7 +16,7 @@ import pandas as pd
 from sklearn.model_selection import StratifiedGroupKFold
 
 
-SOURCE_ORDER = ("HAM10000", "ISIC2019", "PAD_UFES_20")
+SOURCE_ORDER = ("HAM10000", "ISIC2019", "PAD_UFES_20", "Fitzpatrick17k")
 SPLIT_FOLDS = {
     **{fold: "train" for fold in range(14)},
     **{fold: "val" for fold in range(14, 17)},
@@ -48,7 +48,7 @@ def _unique_id_map(frame: pd.DataFrame, key: str, value: str, label: str) -> dic
 
 
 def build_manifest(model_root: Path, seed: int = 42) -> tuple[pd.DataFrame, pd.DataFrame]:
-    datasets = model_root / "datasets"
+    datasets = model_root / "datasets" / "datasets"
     master_path = datasets / "master_dataset.csv"
     if not master_path.is_file():
         raise FileNotFoundError(f"Missing source master CSV: {master_path}")
@@ -82,7 +82,7 @@ def build_manifest(model_root: Path, seed: int = 42) -> tuple[pd.DataFrame, pd.D
     master.loc[pad_mask, "patient_id"] = master.loc[pad_mask, "image_id"].map(pad_patients)
     master.loc[pad_mask, "lesion_id"] = master.loc[pad_mask, "image_id"].map(pad_lesions)
 
-    derm_mask = master["dataset"].isin(("HAM10000", "ISIC2019"))
+    derm_mask = master["dataset"].isin(("HAM10000", "ISIC2019", "Fitzpatrick17k"))
     derm_rows = master.loc[derm_mask]
     # The same official ISIC image ID may appear in both source datasets. A
     # shared source image ID is the strongest identity signal, including when
@@ -106,20 +106,34 @@ def build_manifest(model_root: Path, seed: int = 42) -> tuple[pd.DataFrame, pd.D
         raise ValueError(f"Unexpected dataset labels in master CSV: {sorted(unexpected)}")
     lesion_ids = master["lesion_id"].map(_valid_id)
     patient_ids = master["patient_id"].map(_valid_id)
+    fitz_mask = master["dataset"].eq("Fitzpatrick17k")
+    
+    # Assign group_id based on dataset and available metadata:
+    # - HAM/ISIC: group by lesion_id (or image_id if lesion_id unavailable)
+    # - PAD: group by patient_id (or fall back to lesion_id/image_id)
+    # - Fitzpatrick17k: each image is its own group (no lesion/patient metadata)
     master["group_id"] = np.where(
-        derm_mask,
-        np.where(lesion_ids.notna(), "dermo_lesion_" + lesion_ids.fillna(""),
-                 "dermo_image_" + master["image_id"]),
-        np.where(patient_ids.notna(), "pad_patient_" + patient_ids.fillna(""),
-                 "pad_fallback_" + lesion_ids.fillna(master["image_id"])),
+        fitz_mask,
+        "fitz_image_" + master["image_id"],
+        np.where(
+            derm_mask & ~fitz_mask,
+            np.where(lesion_ids.notna(), "dermo_lesion_" + lesion_ids.fillna(""),
+                     "dermo_image_" + master["image_id"]),
+            np.where(patient_ids.notna(), "pad_patient_" + patient_ids.fillna(""),
+                     "pad_fallback_" + lesion_ids.fillna(master["image_id"])),
+        )
     )
 
     # Conflicting source labels need adjudication; never silently choose one.
-    # HAM/ISIC share image IDs; PAD IDs use their own namespace.
+    # HAM/ISIC share image IDs; PAD and Fitzpatrick17k use their own namespaces.
     master["_dedup_key"] = master["image_id"]
     pad_mask = master["dataset"].eq("PAD_UFES_20")
     master.loc[pad_mask, "_dedup_key"] = (
         "PAD_UFES_20:" + master.loc[pad_mask, "image_id"]
+    )
+    fitz_mask = master["dataset"].eq("Fitzpatrick17k")
+    master.loc[fitz_mask, "_dedup_key"] = (
+        "Fitzpatrick17k:" + master.loc[fitz_mask, "image_id"]
     )
     conflicts = master.groupby("_dedup_key")["class_idx"].nunique()
     conflicts = conflicts[conflicts > 1]

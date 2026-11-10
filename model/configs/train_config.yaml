@@ -7,18 +7,21 @@ model:
   input_size: [224, 224, 3]
 
 training:
-  batch_size: 32
-  epochs: 50
-  learning_rate: 0.0001
+  batch_size: 16  # Reduced for 4GB VRAM (RTX 2050)
+  gradient_accumulation_steps: 4  # Effective batch size = 64
+  epochs: 80  # Increased from 30/50 for better convergence
+  learning_rate: 0.00005  # Reduced for smoother convergence (5e-5)
   optimizer: adamw
   weight_decay: 0.0001
   lr_scheduler: cosine_annealing_warm_restarts
-  early_stopping_patience: 8
+  early_stopping_patience: 15  # Increased patience
+  gradient_clip_norm: 5.0  # Prevent gradient explosion
+  mixed_precision: true  # FP16 for memory efficiency
 
   loss:
-    alpha: 1.0
-    beta: 0.15
-    gamma: 0.25
+    alpha: 1.0  # Classification loss
+    beta: 0.15  # Fitzpatrick auxiliary loss
+    gamma: 0.5  # Fairness gap loss (DOUBLED from 0.25)
 
 data:
   train_split: 0.70

@@ -1,0 +1,152 @@
+╔══════════════════════════════════════════════════════════════════╗
+║         DERMALENS MODEL RETRAINING - QUICK CHECKLIST             ║
+║                     November 7, 2026                             ║
+╚══════════════════════════════════════════════════════════════════╝
+
+DATASET STATUS:
+  ✅ Total Images: 40,182
+  ✅ Classes: 8 (MEL, BCC, SCC, AK, NV, BKL, DF, VASC)
+  ✅ Skin Tones: Fitzpatrick I-VI populated
+  ✅ Location: model/datasets/datasets/master_dataset.csv
+
+═══════════════════════════════════════════════════════════════════
+
+BEFORE YOU START:
+
+□ 1. VERIFY ENVIRONMENT (2 minutes)
+     Command: cd c:\Users\vasud\Downloads\FINAL_YEAR\Derma-Lens1
+              python model\verify_training_readiness.py
+     Expected: "✅ ALL CHECKS PASSED"
+
+□ 2. BACKUP CURRENT MODEL (1 minute)
+     Command: cd model
+              mkdir checkpoints_backup
+              copy checkpoints\best.pth checkpoints_backup\
+     Expected: File copied successfully
+
+□ 3. CHECK DISK SPACE
+     Required: 20 GB free
+     Command: dir C:\
+     Expected: Shows free space >20 GB
+
+□ 4. CLOSE OTHER APPS
+     - Close Chrome/Firefox (save GPU memory)
+     - Close other Python processes
+     - Keep only Jupyter and essential apps
+
+═══════════════════════════════════════════════════════════════════
+
+TRAINING SETUP:
+
+□ 5. OPEN JUPYTER NOTEBOOK
+     Command: jupyter notebook notebooks\dermalens_train.ipynb
+     Expected: Notebook opens in browser
+
+□ 6. UPDATE CELL 2 HYPERPARAMETERS
+     Find these lines and change:
+       EPOCHS = 80              (was 30)
+       LR = 5e-5               (was 1e-4)
+       GAMMA = 0.5             (was 0.25)
+       PATIENCE = 15           (was 7)
+
+□ 7. RUN ALL CELLS
+     Click: Kernel → Restart & Run All
+     Expected: Cell 1-6 run successfully (5 min)
+
+═══════════════════════════════════════════════════════════════════
+
+DURING TRAINING (6-8 hours):
+
+EPOCH DISPLAY:
+  Epoch XX/80 | Loss: X.XXX | Acc: XX.X% | Val Acc: XX.X% | Gap: XX.X%
+
+GOOD SIGNS ✅:
+  ✅ Loss decreasing (starts ~0.5, ends ~0.2)
+  ✅ Val Acc increasing (aim for 78%+)
+  ✅ Fairness Gap decreasing (aim for <15%)
+  ✅ No "CUDA out of memory" errors
+
+BAD SIGNS ❌:
+  ❌ Loss = NaN or Inf → STOP, reduce LR
+  ❌ "CUDA out of memory" → Reduce BATCH_SIZE to 8
+  ❌ Val Acc stuck for 20+ epochs → Check config
+
+CHECKPOINTS AUTO-SAVED:
+  ✅ Every epoch saves to: model/checkpoints/best.pth
+  ✅ Can resume if interrupted
+
+═══════════════════════════════════════════════════════════════════
+
+AFTER TRAINING COMPLETES:
+
+□ 8. CHECK RESULTS (Auto-generated in notebook)
+     Expected metrics:
+       ✅ Balanced Accuracy: ≥78% (was ~70%)
+       ✅ Fairness Gap: <15% (was 26%)
+       ✅ Test AUC: ≥0.93 (was 0.92)
+       ✅ All class recall: >55%
+
+□ 9. EXPORT MODEL TO TFLITE
+     Command: cd c:\Users\vasud\Downloads\FINAL_YEAR\Derma-Lens1\model
+              python export_pipeline.py
+     Expected: Creates fairdermnet_int8.tflite
+
+□ 10. VALIDATE EXPORT
+      Command: python validate_export.py
+      Expected: "✅ Export validation passed"
+
+□ 11. COPY TO FLUTTER APP
+      Command: copy checkpoints\fairdermnet_int8.tflite ..\dermalens_flutter\assets\
+               copy checkpoints\threshold_config.json ..\dermalens_flutter\assets\
+      Expected: Files copied
+
+□ 12. TEST FLUTTER APP
+      Command: cd ..\dermalens_flutter
+               flutter pub get
+               flutter run
+      Expected: App runs with new model
+
+═══════════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING:
+
+ISSUE                           SOLUTION
+─────────────────────────────────────────────────────────────────
+CUDA out of memory             Cell 2: BATCH_SIZE=8, GRAD_ACCUM=8
+Training too slow              Check: nvidia-smi (should be 95%+)
+Loss = NaN                     Cell 2: LR=1e-5, restart training
+Fairness not improving         Cell 2: GAMMA=0.75
+Kernel crashes                 Restart, load checkpoint, continue
+
+═══════════════════════════════════════════════════════════════════
+
+QUICK REFERENCE:
+
+Project Root:  c:\Users\vasud\Downloads\FINAL_YEAR\Derma-Lens1
+Training Time: 6-8 hours
+Dataset Size:  40,182 images
+Target Acc:    78-82%
+Target Gap:    <15%
+
+═══════════════════════════════════════════════════════════════════
+
+DOCUMENTATION FILES:
+  📄 START_RETRAINING.md - Quick start (5 min setup)
+  📄 RETRAINING_CHECKLIST.md - Detailed guide
+  📄 TRAINING_SUMMARY.md - Executive overview
+  📄 IMPROVEMENT_PLAN_PHASE1.md - Technical rationale
+
+═══════════════════════════════════════════════════════════════════
+
+READY TO START? 
+
+✓ All checkboxes above completed?
+✓ 6-8 hours available for training?
+✓ Coffee ready? ☕
+
+→ Run step 5: jupyter notebook notebooks\dermalens_train.ipynb
+
+GOOD LUCK! 🚀
+
+═══════════════════════════════════════════════════════════════════
+Last Updated: November 7, 2026 | Status: READY FOR TRAINING

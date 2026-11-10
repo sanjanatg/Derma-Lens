@@ -1,0 +1,120 @@
+╔═══════════════════════════════════════════════════════════╗
+║       DERMALENS RETRAINING - COPY & PASTE COMMANDS        ║
+╚═══════════════════════════════════════════════════════════╝
+
+📍 STEP 1: VERIFY ENVIRONMENT (2 min)
+═══════════════════════════════════════════════════════════
+cd c:\Users\vasud\Downloads\FINAL_YEAR\Derma-Lens1
+python model\verify_training_readiness.py
+
+
+📍 STEP 2: BACKUP MODEL (1 min)
+═══════════════════════════════════════════════════════════
+cd c:\Users\vasud\Downloads\FINAL_YEAR\Derma-Lens1\model
+mkdir checkpoints_backup
+copy checkpoints\best.pth checkpoints_backup\best_before_retraining.pth
+
+
+📍 STEP 3: START TRAINING (2 min setup + 6-8 hours)
+═══════════════════════════════════════════════════════════
+jupyter notebook notebooks\dermalens_train.ipynb
+
+[In Jupyter] Update Cell 2:
+  EPOCHS = 80
+  LR = 5e-5
+  GAMMA = 0.5
+  PATIENCE = 15
+
+[In Jupyter] Click: Kernel → Restart & Run All
+
+
+📍 AFTER TRAINING: EXPORT MODEL (10 min)
+═══════════════════════════════════════════════════════════
+cd c:\Users\vasud\Downloads\FINAL_YEAR\Derma-Lens1\model
+python export_pipeline.py
+python validate_export.py
+
+
+📍 DEPLOY TO FLUTTER (5 min)
+═══════════════════════════════════════════════════════════
+copy checkpoints\fairdermnet_int8.tflite ..\dermalens_flutter\assets\
+copy checkpoints\threshold_config.json ..\dermalens_flutter\assets\
+cd ..\dermalens_flutter
+flutter pub get
+flutter run
+
+
+╔═══════════════════════════════════════════════════════════╗
+║                  TRAINING EXPECTATIONS                    ║
+╚═══════════════════════════════════════════════════════════╝
+
+⏱️  TIME:           6-8 hours
+📊 DATASET:        40,182 images
+🎯 TARGET ACC:     78-82% (from ~70%)
+⚖️  TARGET GAP:     <15% (from 26%)
+💾 DISK NEEDED:    20 GB free
+🔥 GPU:            RTX 3050 (6GB) or RTX 2050 (4GB)
+
+
+╔═══════════════════════════════════════════════════════════╗
+║                   WHAT GOOD LOOKS LIKE                    ║
+╚═══════════════════════════════════════════════════════════╝
+
+EPOCH OUTPUT (every few minutes):
+  Epoch 10/80 | Loss: 0.42 | Val Acc: 0.72 | Gap: 0.24
+  Epoch 20/80 | Loss: 0.35 | Val Acc: 0.75 | Gap: 0.21
+  Epoch 40/80 | Loss: 0.28 | Val Acc: 0.78 | Gap: 0.18
+  Epoch 60/80 | Loss: 0.24 | Val Acc: 0.80 | Gap: 0.15
+  Epoch 80/80 | Loss: 0.22 | Val Acc: 0.81 | Gap: 0.14
+
+✅ Loss going DOWN
+✅ Val Acc going UP (toward 78%+)
+✅ Gap going DOWN (toward <15%)
+
+
+╔═══════════════════════════════════════════════════════════╗
+║                      IF THINGS GO WRONG                   ║
+╚═══════════════════════════════════════════════════════════╝
+
+❌ "CUDA out of memory"
+   → In Cell 2: BATCH_SIZE = 8, GRAD_ACCUM = 8
+
+❌ Loss = NaN or Inf
+   → In Cell 2: LR = 1e-5, restart training
+
+❌ Kernel crashes
+   → Restart kernel, checkpoint auto-loaded
+
+❌ Training frozen
+   → Check: nvidia-smi (GPU should be 95-100%)
+
+
+╔═══════════════════════════════════════════════════════════╗
+║                     SUCCESS CRITERIA                      ║
+╚═══════════════════════════════════════════════════════════╝
+
+Training succeeds when:
+  ✅ Balanced Accuracy ≥ 78%
+  ✅ Fairness Gap < 15%
+  ✅ Test AUC ≥ 0.93
+  ✅ All class recall > 55%
+  ✅ Export to TFLite works
+  ✅ Flutter app runs
+
+
+╔═══════════════════════════════════════════════════════════╗
+║                      NEED HELP?                           ║
+╚═══════════════════════════════════════════════════════════╝
+
+📖 Detailed Guide:     RETRAINING_CHECKLIST.md
+📖 Quick Start:        START_RETRAINING.md
+📖 Overview:           TRAINING_SUMMARY.md
+🔍 Environment Check:  model\verify_training_readiness.py
+
+═══════════════════════════════════════════════════════════
+
+Ready? Copy Step 1 commands above and paste into Command Prompt!
+
+Last Updated: November 7, 2026
+Status: ✅ READY FOR TRAINING
+Dataset: 40,182 images

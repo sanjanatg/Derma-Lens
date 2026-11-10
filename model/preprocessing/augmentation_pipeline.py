@@ -50,9 +50,8 @@ def get_train_transforms(input_size: int = INPUT_SIZE) -> A.Compose:
         A.VerticalFlip(p=0.5),
         A.Rotate(limit=180, p=0.9),
         A.RandomResizedCrop(
-            height=input_size,
-            width=input_size,
-            scale=(0.80, 1.20),
+            size=(input_size, input_size),  # Changed: use size instead of height/width
+            scale=(0.80, 1.0),
             ratio=(0.9, 1.1),
             p=0.7,
         ),
@@ -95,16 +94,10 @@ def get_train_transforms(input_size: int = INPUT_SIZE) -> A.Compose:
 
         # ── Texture / Focus Augmentation ─────────────────────────────
         A.GaussianBlur(blur_limit=(3, 5), p=0.1),    # simulate focus issues
-        A.GaussNoise(var_limit=(5.0, 25.0), p=0.2),
+        A.GaussNoise(p=0.2),
 
         # ── Lesion Occlusion (coarse dropout / cutout) ────────────────
-        A.CoarseDropout(
-            max_holes=4,
-            max_height=input_size // 8,
-            max_width=input_size // 8,
-            fill_value=0,
-            p=0.3,
-        ),
+        A.CoarseDropout(p=0.3),
 
         # ── Normalise and to Tensor ───────────────────────────────────
         A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
